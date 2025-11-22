@@ -14,7 +14,307 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      follow_ups: {
+        Row: {
+          contacted_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          outcome: string | null
+          patient_id: string
+          patient_medication_id: string
+          pharmacist_id: string
+          scheduled_date: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          contacted_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          patient_id: string
+          patient_medication_id: string
+          pharmacist_id: string
+          scheduled_date: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          contacted_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          outcome?: string | null
+          patient_id?: string
+          patient_medication_id?: string
+          pharmacist_id?: string
+          scheduled_date?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_ups_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_ups_patient_medication_id_fkey"
+            columns: ["patient_medication_id"]
+            isOneToOne: false
+            referencedRelation: "patient_medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_ups_pharmacist_id_fkey"
+            columns: ["pharmacist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medications: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          dosage_frequency_hours: number | null
+          follow_up_day: number
+          id: string
+          is_chronic: boolean | null
+          name: string
+          notes: string | null
+          refill_reminder_days: number | null
+          reminder_frequency: string
+          standard_dosage: string | null
+          treatment_duration_days: number
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          dosage_frequency_hours?: number | null
+          follow_up_day: number
+          id?: string
+          is_chronic?: boolean | null
+          name: string
+          notes?: string | null
+          refill_reminder_days?: number | null
+          reminder_frequency: string
+          standard_dosage?: string | null
+          treatment_duration_days: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          dosage_frequency_hours?: number | null
+          follow_up_day?: number
+          id?: string
+          is_chronic?: boolean | null
+          name?: string
+          notes?: string | null
+          refill_reminder_days?: number | null
+          reminder_frequency?: string
+          standard_dosage?: string | null
+          treatment_duration_days?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      patient_medications: {
+        Row: {
+          created_at: string | null
+          custom_dosage: string | null
+          end_date: string | null
+          id: string
+          medication_id: string
+          patient_id: string
+          prescribed_by: string
+          quantity: string
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_dosage?: string | null
+          end_date?: string | null
+          id?: string
+          medication_id: string
+          patient_id: string
+          prescribed_by: string
+          quantity: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_dosage?: string | null
+          end_date?: string | null
+          id?: string
+          medication_id?: string
+          patient_id?: string
+          prescribed_by?: string
+          quantity?: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_medications_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_medications_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_medications_prescribed_by_fkey"
+            columns: ["prescribed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          age: number | null
+          consent_given: boolean | null
+          created_at: string | null
+          full_name: string
+          id: string
+          pharmacist_id: string
+          phone: string
+          updated_at: string | null
+        }
+        Insert: {
+          age?: number | null
+          consent_given?: boolean | null
+          created_at?: string | null
+          full_name: string
+          id?: string
+          pharmacist_id: string
+          phone: string
+          updated_at?: string | null
+        }
+        Update: {
+          age?: number | null
+          consent_given?: boolean | null
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          pharmacist_id?: string
+          phone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patients_pharmacist_id_fkey"
+            columns: ["pharmacist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+          pharmacy_name: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          pharmacy_name?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          pharmacy_name?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          created_at: string | null
+          delivery_channel: string
+          error_message: string | null
+          id: string
+          message: string
+          patient_id: string
+          patient_medication_id: string
+          reminder_type: string
+          scheduled_at: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_channel: string
+          error_message?: string | null
+          id?: string
+          message: string
+          patient_id: string
+          patient_medication_id: string
+          reminder_type: string
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivery_channel?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          patient_id?: string
+          patient_medication_id?: string
+          reminder_type?: string
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_patient_medication_id_fkey"
+            columns: ["patient_medication_id"]
+            isOneToOne: false
+            referencedRelation: "patient_medications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
