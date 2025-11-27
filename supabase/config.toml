@@ -1,1 +1,10 @@
 project_id = "raqmzvravmyuundxrrhq"
+
+[functions.schedule-reminders]
+verify_jwt = false
+
+[functions.send-reminders]
+verify_jwt = false
+
+[functions.check-adherence]
+verify_jwt = false
