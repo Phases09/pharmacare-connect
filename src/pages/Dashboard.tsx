@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ActivityIcon,
   BellIcon,
@@ -8,103 +8,209 @@ import {
   PillIcon,
   UsersIcon,
   TrendingUpIcon,
-  ClockIcon,
   PhoneIcon,
   PlusIcon,
   DatabaseIcon,
   BarChart3Icon,
+  LogOutIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+interface FollowUp {
+  id: string;
+  scheduled_date: string;
+  status: string;
+  patient: {
+    full_name: string;
+    phone: string;
+  };
+  patient_medication: {
+    medication: {
+      name: string;
+    };
+  };
+}
+
+interface Reminder {
+  id: string;
+  reminder_type: string;
+  created_at: string;
+  patient: {
+    full_name: string;
+  };
+}
 
 const Dashboard = () => {
-  const stats = [
-    {
-      label: "Total Patients",
-      value: "248",
-      change: "+12%",
-      icon: UsersIcon,
-      color: "primary",
-    },
-    {
-      label: "Active Reminders",
-      value: "156",
-      change: "+8%",
-      icon: BellIcon,
-      color: "accent",
-    },
-    {
-      label: "Follow-Ups Due",
-      value: "23",
-      change: "Today",
-      icon: CalendarIcon,
-      color: "warning",
-    },
-    {
-      label: "Adherence Rate",
-      value: "94%",
-      change: "+5%",
-      icon: TrendingUpIcon,
-      color: "success",
-    },
-  ];
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    activeReminders: 0,
+    followUpsDue: 0,
+    adherenceRate: 0,
+  });
+  const [upcomingFollowUps, setUpcomingFollowUps] = useState<FollowUp[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Reminder[]>([]);
 
-  const upcomingFollowUps = [
-    {
-      name: "Sarah Mensah",
-      medication: "Artesunate-Lumefantrine",
-      dueDate: "Today",
-      type: "Malaria Check",
-      status: "urgent",
-    },
-    {
-      name: "John Asante",
-      medication: "Amlodipine",
-      dueDate: "Today",
-      type: "Refill Due",
-      status: "urgent",
-    },
-    {
-      name: "Grace Osei",
-      medication: "Amoxicillin",
-      dueDate: "Tomorrow",
-      type: "Treatment Check",
-      status: "pending",
-    },
-    {
-      name: "Kwame Boateng",
-      medication: "Metformin",
-      dueDate: "2 days",
-      type: "Chronic Follow-up",
-      status: "pending",
-    },
-  ];
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    fetchDashboardData();
+  }, [user, navigate]);
 
-  const recentActivity = [
-    {
-      action: "Reminder sent",
-      patient: "Sarah Mensah",
-      time: "10 mins ago",
-      icon: BellIcon,
-    },
-    {
-      action: "New registration",
-      patient: "Michael Adjei",
-      time: "1 hour ago",
-      icon: UsersIcon,
-    },
-    {
-      action: "Follow-up completed",
-      patient: "Grace Osei",
-      time: "2 hours ago",
-      icon: CalendarIcon,
-    },
-    {
-      action: "Refill requested",
-      patient: "John Asante",
-      time: "3 hours ago",
-      icon: PillIcon,
-    },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch total patients
+      const { count: patientsCount } = await supabase
+        .from("patients")
+        .select("*", { count: "exact", head: true })
+        .eq("pharmacist_id", user!.id);
+
+      // Fetch patient IDs for this pharmacist
+      const { data: patientData } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("pharmacist_id", user!.id);
+
+      const patientIds = patientData?.map((p) => p.id) || [];
+
+      // Fetch active reminders
+      const { count: remindersCount } = await supabase
+        .from("reminders")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending")
+        .in("patient_id", patientIds.length > 0 ? patientIds : [""]);
+
+      // Fetch follow-ups due today
+      const today = new Date().toISOString().split("T")[0];
+      const { count: followUpsCount } = await supabase
+        .from("follow_ups")
+        .select("*", { count: "exact", head: true })
+        .eq("pharmacist_id", user!.id)
+        .eq("status", "pending")
+        .lte("scheduled_date", today);
+
+      // Fetch upcoming follow-ups with patient and medication details
+      const { data: followUpsData } = await supabase
+        .from("follow_ups")
+        .select(`
+          id,
+          scheduled_date,
+          status,
+          patient:patients(full_name, phone),
+          patient_medication:patient_medications(
+            medication:medications(name)
+          )
+        `)
+        .eq("pharmacist_id", user!.id)
+        .eq("status", "pending")
+        .order("scheduled_date", { ascending: true })
+        .limit(4);
+
+      // Fetch recent reminders for activity feed
+      const { data: remindersData } = await supabase
+        .from("reminders")
+        .select(`
+          id,
+          reminder_type,
+          created_at,
+          patient:patients(full_name)
+        `)
+        .in("patient_id", patientIds.length > 0 ? patientIds : [""])
+        .order("created_at", { ascending: false })
+        .limit(4);
+
+      setStats({
+        totalPatients: patientsCount || 0,
+        activeReminders: remindersCount || 0,
+        followUpsDue: followUpsCount || 0,
+        adherenceRate: 94, // This would need a more complex calculation
+      });
+
+      setUpcomingFollowUps(followUpsData || []);
+      setRecentActivity(remindersData || []);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  const getFollowUpDueDate = (scheduledDate: string) => {
+    const date = new Date(scheduledDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+    const diffTime = date.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Tomorrow";
+    if (diffDays < 0) return "Overdue";
+    return `${diffDays} days`;
+  };
+
+  const getActivityTime = (createdAt: string) => {
+    const date = new Date(createdAt);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+    if (diffMinutes < 60) return `${diffMinutes} mins ago`;
+    if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)} hours ago`;
+    return `${Math.floor(diffMinutes / 1440)} days ago`;
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case "dose":
+        return BellIcon;
+      case "adherence":
+        return CalendarIcon;
+      case "refill":
+        return PillIcon;
+      default:
+        return ActivityIcon;
+    }
+  };
+
+  const getActivityLabel = (type: string) => {
+    switch (type) {
+      case "dose":
+        return "Dose reminder sent";
+      case "adherence":
+        return "Adherence check sent";
+      case "refill":
+        return "Refill reminder sent";
+      default:
+        return "Reminder sent";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,6 +247,10 @@ const Dashboard = () => {
                   New Patient
                 </Button>
               </Link>
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOutIcon className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
@@ -149,7 +259,7 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Welcome back, Pharmacist! 👋</h1>
+          <h1 className="text-4xl font-bold mb-2">Welcome back! 👋</h1>
           <p className="text-muted-foreground text-lg">
             Here's what's happening with your patients today
           </p>
@@ -157,25 +267,57 @@ const Dashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card
-              key={index}
-              className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div
-                  className={`h-12 w-12 rounded-lg bg-${stat.color}/10 flex items-center justify-center`}
-                >
-                  <stat.icon className={`h-6 w-6 text-${stat.color}`} />
-                </div>
-                <Badge variant="secondary" className="text-xs">
-                  {stat.change}
-                </Badge>
+          <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <UsersIcon className="h-6 w-6 text-primary" />
               </div>
-              <div className="text-3xl font-bold mb-1">{stat.value}</div>
-              <div className="text-sm text-muted-foreground">{stat.label}</div>
-            </Card>
-          ))}
+              <Badge variant="secondary" className="text-xs">
+                Total
+              </Badge>
+            </div>
+            <div className="text-3xl font-bold mb-1">{stats.totalPatients}</div>
+            <div className="text-sm text-muted-foreground">Total Patients</div>
+          </Card>
+
+          <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                <BellIcon className="h-6 w-6 text-accent" />
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                Active
+              </Badge>
+            </div>
+            <div className="text-3xl font-bold mb-1">{stats.activeReminders}</div>
+            <div className="text-sm text-muted-foreground">Active Reminders</div>
+          </Card>
+
+          <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                <CalendarIcon className="h-6 w-6 text-warning" />
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                Today
+              </Badge>
+            </div>
+            <div className="text-3xl font-bold mb-1">{stats.followUpsDue}</div>
+            <div className="text-sm text-muted-foreground">Follow-Ups Due</div>
+          </Card>
+
+          <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center">
+                <TrendingUpIcon className="h-6 w-6 text-success" />
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                Rate
+              </Badge>
+            </div>
+            <div className="text-3xl font-bold mb-1">{stats.adherenceRate}%</div>
+            <div className="text-sm text-muted-foreground">Adherence Rate</div>
+          </Card>
         </div>
 
         {/* Main Content Grid */}
@@ -194,51 +336,41 @@ const Dashboard = () => {
               </Link>
             </div>
 
-            <div className="space-y-4">
-              {upcomingFollowUps.map((followUp, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                        followUp.status === "urgent"
-                          ? "bg-destructive/10"
-                          : "bg-primary/10"
-                      }`}
-                    >
-                      <UsersIcon
-                        className={`h-5 w-5 ${
-                          followUp.status === "urgent"
-                            ? "text-destructive"
-                            : "text-primary"
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <div className="font-semibold">{followUp.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {followUp.medication} • {followUp.type}
+            {upcomingFollowUps.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No upcoming follow-ups scheduled
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {upcomingFollowUps.map((followUp) => (
+                  <div
+                    key={followUp.id}
+                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full flex items-center justify-center bg-primary/10">
+                        <UsersIcon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-semibold">{followUp.patient.full_name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {followUp.patient_medication.medication.name}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={getFollowUpDueDate(followUp.scheduled_date) === "Today" || getFollowUpDueDate(followUp.scheduled_date) === "Overdue" ? "destructive" : "secondary"}>
+                        {getFollowUpDueDate(followUp.scheduled_date)}
+                      </Badge>
+                      <Button size="sm" variant="outline">
+                        <PhoneIcon className="h-4 w-4 mr-1" />
+                        Call
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      variant={
-                        followUp.status === "urgent" ? "destructive" : "secondary"
-                      }
-                    >
-                      {followUp.dueDate}
-                    </Badge>
-                    <Button size="sm" variant="outline">
-                      <PhoneIcon className="h-4 w-4 mr-1" />
-                      Call
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Card>
 
           {/* Recent Activity Card */}
@@ -248,24 +380,35 @@ const Dashboard = () => {
               <h2 className="text-2xl font-semibold">Recent Activity</h2>
             </div>
 
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-                    <activity.icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{activity.action}</div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      {activity.patient}
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No recent activity
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentActivity.map((activity) => {
+                  const ActivityIconComponent = getActivityIcon(activity.reminder_type);
+                  return (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <ActivityIconComponent className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">
+                          {getActivityLabel(activity.reminder_type)}
+                        </div>
+                        <div className="text-sm text-muted-foreground truncate">
+                          {activity.patient.full_name}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {getActivityTime(activity.created_at)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {activity.time}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
 
