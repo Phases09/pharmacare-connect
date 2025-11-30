@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -18,15 +17,19 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [pharmacyName, setPharmacyName] = useState("");
   const [phone, setPhone] = useState("");
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
-    // Check if user is already logged in once on mount
+    // Check if user is already logged in - only navigate once
+    if (hasNavigated.current) return;
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      if (session && !hasNavigated.current) {
+        hasNavigated.current = true;
         navigate("/dashboard", { replace: true });
       }
     });
-  }, []);
+  }, [navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +43,18 @@ const Auth = () => {
 
       if (error) throw error;
 
-      navigate("/dashboard", { replace: true });
-      
       toast({
         title: "Success",
         description: "Signed in successfully!",
       });
+
+      // Navigate after a short delay to ensure session is set
+      setTimeout(() => {
+        if (!hasNavigated.current) {
+          hasNavigated.current = true;
+          navigate("/dashboard", { replace: true });
+        }
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -84,14 +93,20 @@ const Auth = () => {
           });
 
         if (profileError) throw profileError;
-
-        navigate("/dashboard", { replace: true });
       }
 
       toast({
         title: "Success",
         description: "Account created successfully!",
       });
+
+      // Navigate after a short delay to ensure session is set
+      setTimeout(() => {
+        if (!hasNavigated.current) {
+          hasNavigated.current = true;
+          navigate("/dashboard", { replace: true });
+        }
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Error",
