@@ -58,14 +58,12 @@ const Dashboard = () => {
   const [recentActivity, setRecentActivity] = useState<Reminder[]>([]);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
     fetchDashboardData();
-  }, [user, navigate]);
+  }, [user]);
 
   const fetchDashboardData = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
 
