@@ -18,8 +18,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useState } from "react";
 
 const DrugDatabase = () => {
+  const [isAddDrugOpen, setIsAddDrugOpen] = useState(false);
   const drugs = [
     {
       name: "Artesunate-Lumefantrine",
@@ -110,10 +120,45 @@ const DrugDatabase = () => {
               Manage medication rules and treatment protocols
             </p>
           </div>
-          <Button>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Add New Drug
-          </Button>
+          <Dialog open={isAddDrugOpen} onOpenChange={setIsAddDrugOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Add New Drug
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Drug</DialogTitle>
+                <DialogDescription>
+                  Add a new medication to the database with treatment protocols.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Drug Name</label>
+                  <Input placeholder="Enter drug name" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Category</label>
+                  <Input placeholder="e.g., Antibiotic, Antimalarial" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Treatment Duration</label>
+                  <Input placeholder="e.g., 7 days, Chronic" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Dosage Frequency</label>
+                  <Input placeholder="e.g., 3x daily (8hrs)" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Follow-up Schedule</label>
+                  <Input placeholder="e.g., Day 3, Every 30 days" />
+                </div>
+                <Button className="w-full">Save Drug</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
