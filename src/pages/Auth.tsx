@@ -20,22 +20,13 @@ const Auth = () => {
   const [phone, setPhone] = useState("");
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already logged in once on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +40,8 @@ const Auth = () => {
 
       if (error) throw error;
 
+      navigate("/dashboard", { replace: true });
+      
       toast({
         title: "Success",
         description: "Signed in successfully!",
@@ -91,6 +84,8 @@ const Auth = () => {
           });
 
         if (profileError) throw profileError;
+
+        navigate("/dashboard", { replace: true });
       }
 
       toast({
