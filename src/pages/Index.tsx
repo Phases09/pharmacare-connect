@@ -155,18 +155,27 @@ const Index = () => {
                 description: "Predict and remind patients when it's time to refill chronic medications",
                 color: "accent"
               },
-            ].map((feature, index) => (
-              <Card 
-                key={index} 
-                className="p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group"
-              >
-                <div className={`h-12 w-12 rounded-lg bg-${feature.color}/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className={`h-6 w-6 text-${feature.color}`} />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </Card>
-            ))}
+            ].map((feature, index) => {
+              const isAnalytics = feature.title === "Analytics Dashboard";
+              const CardContent = (
+                <Card 
+                  key={index} 
+                  className={`p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group ${isAnalytics ? 'cursor-pointer' : ''}`}
+                >
+                  <div className={`h-12 w-12 rounded-lg bg-${feature.color}/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <feature.icon className={`h-6 w-6 text-${feature.color}`} />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-muted-foreground">{feature.description}</p>
+                </Card>
+              );
+
+              return isAnalytics ? (
+                <Link key={index} to="/dashboard">
+                  {CardContent}
+                </Link>
+              ) : CardContent;
+            })}
           </div>
         </div>
       </section>
