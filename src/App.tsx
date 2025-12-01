@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import RegisterCustomer from "./pages/RegisterCustomer";
 import DrugDatabase from "./pages/DrugDatabase";
 import FollowUps from "./pages/FollowUps";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -52,6 +53,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <FollowUps />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             }
           />

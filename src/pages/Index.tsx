@@ -171,7 +171,7 @@ const Index = () => {
               );
 
               return isAnalytics ? (
-                <Link key={index} to="/dashboard">
+                <Link key={index} to="/analytics">
                   {CardContent}
                 </Link>
               ) : CardContent;
