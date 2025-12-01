@@ -236,6 +236,9 @@ const Dashboard = () => {
                 <Link to="/follow-ups">
                   <Button variant="ghost">Follow-Ups</Button>
                 </Link>
+                <Link to="/analytics">
+                  <Button variant="ghost">Analytics</Button>
+                </Link>
               </nav>
             </div>
             <div className="flex items-center gap-3">
