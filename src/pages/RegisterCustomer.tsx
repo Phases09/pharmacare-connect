@@ -9,37 +9,158 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link, useNavigate } from "react-router-dom";
 import { PillIcon, ArrowLeftIcon, CheckIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+interface Medication {
+  id: string;
+  name: string;
+  treatment_duration_days: number;
+  reminder_frequency: string;
+  is_chronic: boolean;
+}
 
 const RegisterCustomer = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     age: "",
-    medication: "",
+    medicationId: "",
     duration: "",
     quantity: "",
+    consentGiven: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchMedications();
+  }, []);
+
+  const fetchMedications = async () => {
+    const { data, error } = await supabase
+      .from("medications")
+      .select("id, name, treatment_duration_days, reminder_frequency, is_chronic")
+      .order("name");
+
+    if (error) {
+      console.error("Error fetching medications:", error);
+      return;
+    }
+
+    setMedications(data || []);
+  };
+
+  const selectedMedication = medications.find(m => m.id === formData.medicationId);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Patient Registered Successfully",
-      description: `${formData.name} has been added. Reminders will be sent automatically.`,
-    });
-    // Reset form
-    setFormData({
-      name: "",
-      phone: "",
-      age: "",
-      medication: "",
-      duration: "",
-      quantity: "",
-    });
+    
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to register patients",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.consentGiven) {
+      toast({
+        title: "Consent Required",
+        description: "Please confirm the patient has given consent to receive reminders",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Create the patient
+      const { data: patientData, error: patientError } = await supabase
+        .from("patients")
+        .insert({
+          full_name: formData.name,
+          phone: formData.phone,
+          age: formData.age ? parseInt(formData.age) : null,
+          pharmacist_id: user.id,
+          consent_given: formData.consentGiven,
+        })
+        .select()
+        .single();
+
+      if (patientError) throw patientError;
+
+      // Create the patient medication record
+      const durationDays = formData.duration ? parseInt(formData.duration) : selectedMedication?.treatment_duration_days || 7;
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + durationDays);
+
+      const { data: patientMedData, error: patientMedError } = await supabase
+        .from("patient_medications")
+        .insert({
+          patient_id: patientData.id,
+          medication_id: formData.medicationId,
+          prescribed_by: user.id,
+          quantity: formData.quantity,
+          end_date: endDate.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (patientMedError) throw patientMedError;
+
+      // Schedule a follow-up
+      const followUpDate = new Date();
+      followUpDate.setDate(followUpDate.getDate() + durationDays);
+
+      const { error: followUpError } = await supabase
+        .from("follow_ups")
+        .insert({
+          patient_id: patientData.id,
+          patient_medication_id: patientMedData.id,
+          pharmacist_id: user.id,
+          scheduled_date: followUpDate.toISOString().split("T")[0],
+        });
+
+      if (followUpError) throw followUpError;
+
+      toast({
+        title: "Patient Registered Successfully",
+        description: `${formData.name} has been added. Reminders will be sent automatically.`,
+      });
+
+      // Reset form and navigate to dashboard
+      setFormData({
+        name: "",
+        phone: "",
+        age: "",
+        medicationId: "",
+        duration: "",
+        quantity: "",
+        consentGiven: false,
+      });
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Error registering patient:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to register patient. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -142,31 +263,21 @@ const RegisterCustomer = () => {
                 <div className="space-y-2">
                   <Label htmlFor="medication">Medication Prescribed *</Label>
                   <Select
-                    value={formData.medication}
+                    value={formData.medicationId}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, medication: value })
+                      setFormData({ ...formData, medicationId: value })
                     }
+                    required
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select medication" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="artesunate">
-                        Artesunate-Lumefantrine (Malaria)
-                      </SelectItem>
-                      <SelectItem value="amoxicillin">
-                        Amoxicillin (Antibiotic)
-                      </SelectItem>
-                      <SelectItem value="amlodipine">
-                        Amlodipine (Hypertension)
-                      </SelectItem>
-                      <SelectItem value="metformin">
-                        Metformin (Diabetes)
-                      </SelectItem>
-                      <SelectItem value="paracetamol">
-                        Paracetamol (Pain Relief)
-                      </SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      {medications.map((med) => (
+                        <SelectItem key={med.id} value={med.id}>
+                          {med.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -181,7 +292,7 @@ const RegisterCustomer = () => {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select duration" />
+                        <SelectValue placeholder={selectedMedication ? `Default: ${selectedMedication.treatment_duration_days} days` : "Select duration"} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="3">3 days</SelectItem>
@@ -209,8 +320,22 @@ const RegisterCustomer = () => {
                 </div>
               </div>
 
+              {/* Consent Checkbox */}
+              <div className="flex items-center space-x-2 pt-4">
+                <Checkbox
+                  id="consent"
+                  checked={formData.consentGiven}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, consentGiven: checked === true })
+                  }
+                />
+                <Label htmlFor="consent" className="text-sm">
+                  Patient has given consent to receive SMS/WhatsApp reminders *
+                </Label>
+              </div>
+
               {/* Reminder Preview */}
-              {formData.medication && formData.duration && (
+              {formData.medicationId && (formData.duration || selectedMedication) && (
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-start gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -223,10 +348,10 @@ const RegisterCustomer = () => {
                       <ul className="text-sm text-muted-foreground space-y-1">
                         <li>✓ Daily medication reminders will be sent</li>
                         <li>
-                          ✓ Follow-up scheduled for day {formData.duration}
+                          ✓ Follow-up scheduled for day {formData.duration || selectedMedication?.treatment_duration_days}
                         </li>
                         <li>✓ Adherence tracking enabled</li>
-                        {parseInt(formData.duration) >= 30 && (
+                        {(parseInt(formData.duration) >= 30 || selectedMedication?.is_chronic) && (
                           <li>✓ Refill reminder will be sent</li>
                         )}
                       </ul>
@@ -237,8 +362,8 @@ const RegisterCustomer = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-4 pt-6">
-                <Button type="submit" size="lg" className="flex-1">
-                  Register Patient
+                <Button type="submit" size="lg" className="flex-1" disabled={isLoading}>
+                  {isLoading ? "Registering..." : "Register Patient"}
                 </Button>
                 <Link to="/dashboard" className="flex-1">
                   <Button type="button" variant="outline" size="lg" className="w-full">
