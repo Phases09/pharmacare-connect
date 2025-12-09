@@ -299,6 +299,7 @@ const RegisterCustomer = () => {
                         <SelectItem value="5">5 days</SelectItem>
                         <SelectItem value="7">7 days</SelectItem>
                         <SelectItem value="14">14 days</SelectItem>
+                        <SelectItem value="28">28 days</SelectItem>
                         <SelectItem value="30">30 days (Chronic)</SelectItem>
                         <SelectItem value="90">90 days (Chronic)</SelectItem>
                       </SelectContent>
