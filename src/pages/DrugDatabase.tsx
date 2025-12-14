@@ -26,67 +26,113 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Medication {
+  id: string;
+  name: string;
+  category: string | null;
+  treatment_duration_days: number;
+  dosage_frequency_hours: number | null;
+  follow_up_day: number;
+  reminder_frequency: string;
+  is_chronic: boolean | null;
+}
 
 const DrugDatabase = () => {
+  const { toast } = useToast();
   const [isAddDrugOpen, setIsAddDrugOpen] = useState(false);
-  const drugs = [
-    {
-      name: "Artesunate-Lumefantrine",
-      category: "Antimalarial",
-      duration: "3 days",
-      frequency: "2x daily",
-      followUp: "Day 3",
-      color: "primary",
-    },
-    {
-      name: "Amoxicillin",
-      category: "Antibiotic",
-      duration: "5-7 days",
-      frequency: "3x daily (8hrs)",
-      followUp: "Day 2 & 5",
-      color: "accent",
-    },
-    {
-      name: "Amlodipine",
-      category: "Antihypertensive",
-      duration: "Chronic",
-      frequency: "1x daily",
-      followUp: "Every 30 days",
-      color: "success",
-    },
-    {
-      name: "Metformin",
-      category: "Antidiabetic",
-      duration: "Chronic",
-      frequency: "2x daily",
-      followUp: "Every 30 days",
-      color: "success",
-    },
-    {
-      name: "Paracetamol",
-      category: "Analgesic",
-      duration: "As needed",
-      frequency: "PRN (max 4x daily)",
-      followUp: "None",
-      color: "warning",
-    },
-    {
-      name: "Ciprofloxacin",
-      category: "Antibiotic",
-      duration: "7 days",
-      frequency: "2x daily",
-      followUp: "Day 4",
-      color: "accent",
-    },
-  ];
+  const [isLoading, setIsLoading] = useState(false);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  
+  // Form state
+  const [drugName, setDrugName] = useState("");
+  const [category, setCategory] = useState("");
+  const [treatmentDuration, setTreatmentDuration] = useState("");
+  const [dosageFrequency, setDosageFrequency] = useState("");
+  const [followUpDay, setFollowUpDay] = useState("");
+
+  // Fetch medications from database
+  const fetchMedications = async () => {
+    const { data, error } = await supabase
+      .from("medications")
+      .select("*")
+      .order("name");
+    
+    if (error) {
+      console.error("Error fetching medications:", error);
+      return;
+    }
+    
+    setMedications(data || []);
+  };
+
+  useEffect(() => {
+    fetchMedications();
+  }, []);
+
+  const handleSaveDrug = async () => {
+    if (!drugName.trim()) {
+      toast({
+        title: "Error",
+        description: "Drug name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    const durationDays = parseInt(treatmentDuration) || 7;
+    const frequencyHours = parseInt(dosageFrequency) || 8;
+    const followUp = parseInt(followUpDay) || Math.ceil(durationDays / 2);
+
+    const { error } = await supabase.from("medications").insert({
+      name: drugName.trim(),
+      category: category.trim() || null,
+      treatment_duration_days: durationDays,
+      dosage_frequency_hours: frequencyHours,
+      follow_up_day: followUp,
+      reminder_frequency: `Every ${frequencyHours} hours`,
+      is_chronic: durationDays >= 30,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save drug: " + error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Drug added successfully",
+    });
+
+    // Reset form and close dialog
+    setDrugName("");
+    setCategory("");
+    setTreatmentDuration("");
+    setDosageFrequency("");
+    setFollowUpDay("");
+    setIsAddDrugOpen(false);
+    
+    // Refresh medications list
+    fetchMedications();
+  };
 
   const categories = [
-    { name: "All Drugs", count: drugs.length },
-    { name: "Antibiotics", count: 2 },
-    { name: "Chronic", count: 2 },
-    { name: "Antimalarial", count: 1 },
-    { name: "Analgesics", count: 1 },
+    { name: "All Drugs", count: medications.length },
+    { name: "Antibiotics", count: medications.filter(m => m.category?.toLowerCase() === "antibiotic").length },
+    { name: "Chronic", count: medications.filter(m => m.is_chronic).length },
+    { name: "Antimalarial", count: medications.filter(m => m.category?.toLowerCase() === "antimalarial").length },
+    { name: "Analgesics", count: medications.filter(m => m.category?.toLowerCase() === "analgesic").length },
   ];
 
   return (
@@ -137,25 +183,50 @@ const DrugDatabase = () => {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium">Drug Name</label>
-                  <Input placeholder="Enter drug name" />
+                  <Input 
+                    placeholder="Enter drug name" 
+                    value={drugName}
+                    onChange={(e) => setDrugName(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Category</label>
-                  <Input placeholder="e.g., Antibiotic, Antimalarial" />
+                  <Input 
+                    placeholder="e.g., Antibiotic, Antimalarial" 
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Treatment Duration</label>
-                  <Input placeholder="e.g., 7 days, Chronic" />
+                  <label className="text-sm font-medium">Treatment Duration (days)</label>
+                  <Input 
+                    placeholder="e.g., 7, 30" 
+                    type="number"
+                    value={treatmentDuration}
+                    onChange={(e) => setTreatmentDuration(e.target.value)}
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Dosage Frequency</label>
-                  <Input placeholder="e.g., 3x daily (8hrs)" />
+                  <label className="text-sm font-medium">Dosage Frequency (hours)</label>
+                  <Input 
+                    placeholder="e.g., 8, 12, 24" 
+                    type="number"
+                    value={dosageFrequency}
+                    onChange={(e) => setDosageFrequency(e.target.value)}
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Follow-up Schedule</label>
-                  <Input placeholder="e.g., Day 3, Every 30 days" />
+                  <label className="text-sm font-medium">Follow-up Day</label>
+                  <Input 
+                    placeholder="e.g., 3, 7" 
+                    type="number"
+                    value={followUpDay}
+                    onChange={(e) => setFollowUpDay(e.target.value)}
+                  />
                 </div>
-                <Button className="w-full">Save Drug</Button>
+                <Button className="w-full" onClick={handleSaveDrug} disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Save Drug"}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -185,15 +256,15 @@ const DrugDatabase = () => {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Drugs</span>
-                  <span className="font-semibold">{drugs.length}</span>
+                  <span className="font-semibold">{medications.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Chronic Meds</span>
-                  <span className="font-semibold">2</span>
+                  <span className="font-semibold">{medications.filter(m => m.is_chronic).length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Categories</span>
-                  <span className="font-semibold">5</span>
+                  <span className="font-semibold">{new Set(medications.map(m => m.category).filter(Boolean)).size}</span>
                 </div>
               </div>
             </Card>
@@ -226,24 +297,21 @@ const DrugDatabase = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {drugs.map((drug, index) => (
-                    <TableRow key={index}>
+                  {medications.map((med) => (
+                    <TableRow key={med.id}>
                       <TableCell className="font-medium">
-                        {drug.name}
+                        {med.name}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{drug.category}</Badge>
+                        <Badge variant="outline">{med.category || "Uncategorized"}</Badge>
                       </TableCell>
-                      <TableCell>{drug.duration}</TableCell>
+                      <TableCell>{med.is_chronic ? "Chronic" : `${med.treatment_duration_days} days`}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {drug.frequency}
+                        Every {med.dosage_frequency_hours || 8} hours
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={`bg-${drug.color}/10 text-${drug.color}`}
-                        >
-                          {drug.followUp}
+                        <Badge variant="secondary">
+                          Day {med.follow_up_day}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
