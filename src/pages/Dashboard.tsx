@@ -10,7 +10,6 @@ import {
   TrendingUpIcon,
   PhoneIcon,
   PlusIcon,
-  DatabaseIcon,
   BarChart3Icon,
   LogOutIcon,
 } from "lucide-react";
@@ -230,9 +229,6 @@ const Dashboard = () => {
                 <Link to="/register">
                   <Button variant="ghost">Register Patient</Button>
                 </Link>
-                <Link to="/drug-database">
-                  <Button variant="ghost">Drug Database</Button>
-                </Link>
                 <Link to="/follow-ups">
                   <Button variant="ghost">Follow-Ups</Button>
                 </Link>
@@ -431,16 +427,16 @@ const Dashboard = () => {
             </Card>
           </Link>
 
-          <Link to="/drug-database">
+          <Link to="/follow-ups">
             <Card className="p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <DatabaseIcon className="h-6 w-6 text-accent" />
+                  <CalendarIcon className="h-6 w-6 text-accent" />
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">Drug Database</div>
+                  <div className="font-semibold text-lg">Manage Follow-Ups</div>
                   <div className="text-sm text-muted-foreground">
-                    Manage drug information
+                    View scheduled follow-ups
                   </div>
                 </div>
               </div>

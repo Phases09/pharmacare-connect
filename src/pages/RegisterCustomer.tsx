@@ -12,54 +12,25 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useNavigate } from "react-router-dom";
 import { PillIcon, ArrowLeftIcon, CheckIcon } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-
-interface Medication {
-  id: string;
-  name: string;
-  treatment_duration_days: number;
-  reminder_frequency: string;
-  is_chronic: boolean;
-}
 
 const RegisterCustomer = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [medications, setMedications] = useState<Medication[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     age: "",
-    medicationId: "",
+    medicationName: "",
     duration: "",
     quantity: "",
     consentGiven: false,
   });
-
-  useEffect(() => {
-    fetchMedications();
-  }, []);
-
-  const fetchMedications = async () => {
-    const { data, error } = await supabase
-      .from("medications")
-      .select("id, name, treatment_duration_days, reminder_frequency, is_chronic")
-      .order("name");
-
-    if (error) {
-      console.error("Error fetching medications:", error);
-      return;
-    }
-
-    setMedications(data || []);
-  };
-
-  const selectedMedication = medications.find(m => m.id === formData.medicationId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,9 +53,41 @@ const RegisterCustomer = () => {
       return;
     }
 
+    if (!formData.medicationName.trim()) {
+      toast({
+        title: "Medication Required",
+        description: "Please enter the medication name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.duration) {
+      toast({
+        title: "Duration Required",
+        description: "Please select a treatment duration",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      // First, create or find the medication
+      const { data: medicationData, error: medicationError } = await supabase
+        .from("medications")
+        .insert({
+          name: formData.medicationName.trim(),
+          treatment_duration_days: parseInt(formData.duration),
+          reminder_frequency: "daily",
+          follow_up_day: parseInt(formData.duration),
+        })
+        .select()
+        .single();
+
+      if (medicationError) throw medicationError;
+
       // Create the patient
       const { data: patientData, error: patientError } = await supabase
         .from("patients")
@@ -101,7 +104,7 @@ const RegisterCustomer = () => {
       if (patientError) throw patientError;
 
       // Create the patient medication record
-      const durationDays = formData.duration ? parseInt(formData.duration) : selectedMedication?.treatment_duration_days || 7;
+      const durationDays = parseInt(formData.duration);
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + durationDays);
 
@@ -109,7 +112,7 @@ const RegisterCustomer = () => {
         .from("patient_medications")
         .insert({
           patient_id: patientData.id,
-          medication_id: formData.medicationId,
+          medication_id: medicationData.id,
           prescribed_by: user.id,
           quantity: formData.quantity,
           end_date: endDate.toISOString(),
@@ -144,7 +147,7 @@ const RegisterCustomer = () => {
         name: "",
         phone: "",
         age: "",
-        medicationId: "",
+        medicationName: "",
         duration: "",
         quantity: "",
         consentGiven: false,
@@ -262,24 +265,15 @@ const RegisterCustomer = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="medication">Medication Prescribed *</Label>
-                  <Select
-                    value={formData.medicationId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, medicationId: value })
+                  <Input
+                    id="medication"
+                    value={formData.medicationName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, medicationName: e.target.value })
                     }
+                    placeholder="e.g., Amoxicillin 500mg"
                     required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select medication" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {medications.map((med) => (
-                        <SelectItem key={med.id} value={med.id}>
-                          {med.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -292,7 +286,7 @@ const RegisterCustomer = () => {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder={selectedMedication ? `Default: ${selectedMedication.treatment_duration_days} days` : "Select duration"} />
+                        <SelectValue placeholder="Select duration" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="3">3 days</SelectItem>
@@ -336,7 +330,7 @@ const RegisterCustomer = () => {
               </div>
 
               {/* Reminder Preview */}
-              {formData.medicationId && (formData.duration || selectedMedication) && (
+              {formData.medicationName && formData.duration && (
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-start gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -349,10 +343,10 @@ const RegisterCustomer = () => {
                       <ul className="text-sm text-muted-foreground space-y-1">
                         <li>✓ Daily medication reminders will be sent</li>
                         <li>
-                          ✓ Follow-up scheduled for day {formData.duration || selectedMedication?.treatment_duration_days}
+                          ✓ Follow-up scheduled for day {formData.duration}
                         </li>
                         <li>✓ Adherence tracking enabled</li>
-                        {(parseInt(formData.duration) >= 30 || selectedMedication?.is_chronic) && (
+                        {parseInt(formData.duration) >= 30 && (
                           <li>✓ Refill reminder will be sent</li>
                         )}
                       </ul>

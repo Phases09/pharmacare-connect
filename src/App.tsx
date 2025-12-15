@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import RegisterCustomer from "./pages/RegisterCustomer";
-import DrugDatabase from "./pages/DrugDatabase";
 import FollowUps from "./pages/FollowUps";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
@@ -37,14 +36,6 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <RegisterCustomer />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/drug-database"
-            element={
-              <ProtectedRoute>
-                <DrugDatabase />
               </ProtectedRoute>
             }
           />
