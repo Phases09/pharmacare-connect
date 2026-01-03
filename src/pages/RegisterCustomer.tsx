@@ -2,13 +2,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useNavigate } from "react-router-dom";
 import { PillIcon, ArrowLeftIcon, CheckIcon } from "lucide-react";
@@ -136,6 +129,35 @@ const RegisterCustomer = () => {
         });
 
       if (followUpError) throw followUpError;
+
+      // Create daily reminders for the treatment duration
+      const reminders = [];
+      for (let day = 0; day < durationDays; day++) {
+        const reminderDate = new Date();
+        reminderDate.setDate(reminderDate.getDate() + day);
+        reminderDate.setHours(9, 0, 0, 0); // Set to 9 AM
+
+        reminders.push({
+          patient_id: patientData.id,
+          patient_medication_id: patientMedData.id,
+          reminder_type: 'dose',
+          message: `Hi ${formData.name}, this is your reminder to take ${formData.medicationName}. Dosage: ${formData.quantity}`,
+          scheduled_at: reminderDate.toISOString(),
+          delivery_channel: 'sms',
+          status: 'pending'
+        });
+      }
+
+      if (reminders.length > 0) {
+        const { error: remindersError } = await supabase
+          .from("reminders")
+          .insert(reminders);
+
+        if (remindersError) {
+          console.error("Error creating reminders:", remindersError);
+          // Don't throw, just log - patient is already registered
+        }
+      }
 
       toast({
         title: "Patient Registered Successfully",
@@ -278,26 +300,19 @@ const RegisterCustomer = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="duration">Treatment Duration *</Label>
-                    <Select
+                    <Label htmlFor="duration">Treatment Duration (days) *</Label>
+                    <Input
+                      id="duration"
+                      type="number"
+                      min="1"
+                      max="365"
                       value={formData.duration}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, duration: value })
+                      onChange={(e) =>
+                        setFormData({ ...formData, duration: e.target.value })
                       }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select duration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="3">3 days</SelectItem>
-                        <SelectItem value="5">5 days</SelectItem>
-                        <SelectItem value="7">7 days</SelectItem>
-                        <SelectItem value="14">14 days</SelectItem>
-                        <SelectItem value="28">28 days</SelectItem>
-                        <SelectItem value="30">30 days (Chronic)</SelectItem>
-                        <SelectItem value="90">90 days (Chronic)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      placeholder="e.g., 7"
+                      required
+                    />
                   </div>
 
                   <div className="space-y-2">
