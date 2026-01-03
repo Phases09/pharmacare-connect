@@ -359,7 +359,11 @@ const Dashboard = () => {
                       <Badge variant={getFollowUpDueDate(followUp.scheduled_date) === "Today" || getFollowUpDueDate(followUp.scheduled_date) === "Overdue" ? "destructive" : "secondary"}>
                         {getFollowUpDueDate(followUp.scheduled_date)}
                       </Badge>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(`tel:${followUp.patient.phone}`, '_self')}
+                      >
                         <PhoneIcon className="h-4 w-4 mr-1" />
                         Call
                       </Button>
