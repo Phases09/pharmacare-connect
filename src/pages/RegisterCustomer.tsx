@@ -4,26 +4,52 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useNavigate } from "react-router-dom";
-import { PillIcon, ArrowLeftIcon, CheckIcon } from "lucide-react";
+import { PillIcon, ArrowLeftIcon, CheckIcon, PlusIcon, TrashIcon } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+
+interface Medication {
+  id: string;
+  name: string;
+  duration: string;
+  quantity: string;
+}
 
 const RegisterCustomer = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [patientInfo, setPatientInfo] = useState({
     name: "",
     phone: "",
     age: "",
-    medicationName: "",
-    duration: "",
-    quantity: "",
     consentGiven: false,
   });
+  const [medications, setMedications] = useState<Medication[]>([
+    { id: crypto.randomUUID(), name: "", duration: "", quantity: "" }
+  ]);
+
+  const addMedication = () => {
+    setMedications([
+      ...medications,
+      { id: crypto.randomUUID(), name: "", duration: "", quantity: "" }
+    ]);
+  };
+
+  const removeMedication = (id: string) => {
+    if (medications.length > 1) {
+      setMedications(medications.filter(med => med.id !== id));
+    }
+  };
+
+  const updateMedication = (id: string, field: keyof Omit<Medication, 'id'>, value: string) => {
+    setMedications(medications.map(med => 
+      med.id === id ? { ...med, [field]: value } : med
+    ));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +63,7 @@ const RegisterCustomer = () => {
       return;
     }
 
-    if (!formData.consentGiven) {
+    if (!patientInfo.consentGiven) {
       toast({
         title: "Consent Required",
         description: "Please confirm the patient has given consent to receive reminders",
@@ -46,19 +72,15 @@ const RegisterCustomer = () => {
       return;
     }
 
-    if (!formData.medicationName.trim()) {
-      toast({
-        title: "Medication Required",
-        description: "Please enter the medication name",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Validate all medications
+    const invalidMedication = medications.find(
+      med => !med.name.trim() || !med.duration || !med.quantity.trim()
+    );
 
-    if (!formData.duration) {
+    if (invalidMedication) {
       toast({
-        title: "Duration Required",
-        description: "Please select a treatment duration",
+        title: "Incomplete Medication Details",
+        description: "Please fill in all medication details (name, duration, and quantity)",
         variant: "destructive",
       });
       return;
@@ -67,113 +89,113 @@ const RegisterCustomer = () => {
     setIsLoading(true);
 
     try {
-      // First, create or find the medication
-      const { data: medicationData, error: medicationError } = await supabase
-        .from("medications")
-        .insert({
-          name: formData.medicationName.trim(),
-          treatment_duration_days: parseInt(formData.duration),
-          reminder_frequency: "daily",
-          follow_up_day: parseInt(formData.duration),
-        })
-        .select()
-        .single();
-
-      if (medicationError) throw medicationError;
-
-      // Create the patient
+      // Create the patient first
       const { data: patientData, error: patientError } = await supabase
         .from("patients")
         .insert({
-          full_name: formData.name,
-          phone: formData.phone,
-          age: formData.age ? parseInt(formData.age) : null,
+          full_name: patientInfo.name,
+          phone: patientInfo.phone,
+          age: patientInfo.age ? parseInt(patientInfo.age) : null,
           pharmacist_id: user.id,
-          consent_given: formData.consentGiven,
+          consent_given: patientInfo.consentGiven,
         })
         .select()
         .single();
 
       if (patientError) throw patientError;
 
-      // Create the patient medication record
-      const durationDays = parseInt(formData.duration);
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + durationDays);
+      // Process each medication
+      for (const med of medications) {
+        // Create the medication record
+        const { data: medicationData, error: medicationError } = await supabase
+          .from("medications")
+          .insert({
+            name: med.name.trim(),
+            treatment_duration_days: parseInt(med.duration),
+            reminder_frequency: "daily",
+            follow_up_day: parseInt(med.duration),
+          })
+          .select()
+          .single();
 
-      const { data: patientMedData, error: patientMedError } = await supabase
-        .from("patient_medications")
-        .insert({
-          patient_id: patientData.id,
-          medication_id: medicationData.id,
-          prescribed_by: user.id,
-          quantity: formData.quantity,
-          end_date: endDate.toISOString(),
-        })
-        .select()
-        .single();
+        if (medicationError) throw medicationError;
 
-      if (patientMedError) throw patientMedError;
+        // Create the patient medication record
+        const durationDays = parseInt(med.duration);
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + durationDays);
 
-      // Schedule a follow-up
-      const followUpDate = new Date();
-      followUpDate.setDate(followUpDate.getDate() + durationDays);
+        const { data: patientMedData, error: patientMedError } = await supabase
+          .from("patient_medications")
+          .insert({
+            patient_id: patientData.id,
+            medication_id: medicationData.id,
+            prescribed_by: user.id,
+            quantity: med.quantity,
+            end_date: endDate.toISOString(),
+          })
+          .select()
+          .single();
 
-      const { error: followUpError } = await supabase
-        .from("follow_ups")
-        .insert({
-          patient_id: patientData.id,
-          patient_medication_id: patientMedData.id,
-          pharmacist_id: user.id,
-          scheduled_date: followUpDate.toISOString().split("T")[0],
-        });
+        if (patientMedError) throw patientMedError;
 
-      if (followUpError) throw followUpError;
+        // Schedule a follow-up for this medication
+        const followUpDate = new Date();
+        followUpDate.setDate(followUpDate.getDate() + durationDays);
 
-      // Create daily reminders for the treatment duration
-      const reminders = [];
-      for (let day = 0; day < durationDays; day++) {
-        const reminderDate = new Date();
-        reminderDate.setDate(reminderDate.getDate() + day);
-        reminderDate.setHours(9, 0, 0, 0); // Set to 9 AM
+        const { error: followUpError } = await supabase
+          .from("follow_ups")
+          .insert({
+            patient_id: patientData.id,
+            patient_medication_id: patientMedData.id,
+            pharmacist_id: user.id,
+            scheduled_date: followUpDate.toISOString().split("T")[0],
+          });
 
-        reminders.push({
-          patient_id: patientData.id,
-          patient_medication_id: patientMedData.id,
-          reminder_type: 'dose',
-          message: `Hi ${formData.name}, this is your reminder to take ${formData.medicationName}. Dosage: ${formData.quantity}`,
-          scheduled_at: reminderDate.toISOString(),
-          delivery_channel: 'sms',
-          status: 'pending'
-        });
-      }
+        if (followUpError) throw followUpError;
 
-      if (reminders.length > 0) {
-        const { error: remindersError } = await supabase
-          .from("reminders")
-          .insert(reminders);
+        // Create daily reminders for this medication
+        const reminders = [];
+        for (let day = 0; day < durationDays; day++) {
+          const reminderDate = new Date();
+          reminderDate.setDate(reminderDate.getDate() + day);
+          reminderDate.setHours(9, 0, 0, 0); // Set to 9 AM
 
-        if (remindersError) {
-          console.error("Error creating reminders:", remindersError);
-          // Don't throw, just log - patient is already registered
+          reminders.push({
+            patient_id: patientData.id,
+            patient_medication_id: patientMedData.id,
+            reminder_type: 'dose',
+            message: `Hi ${patientInfo.name}, this is your reminder to take ${med.name}. Dosage: ${med.quantity}`,
+            scheduled_at: reminderDate.toISOString(),
+            delivery_channel: 'sms',
+            status: 'pending'
+          });
+        }
+
+        if (reminders.length > 0) {
+          const { error: remindersError } = await supabase
+            .from("reminders")
+            .insert(reminders);
+
+          if (remindersError) {
+            console.error("Error creating reminders:", remindersError);
+          }
         }
       }
 
       toast({
         title: "Patient Registered Successfully",
-        description: `${formData.name} has been added. Reminders will be sent automatically.`,
+        description: `${patientInfo.name} has been added with ${medications.length} medication(s). Reminders will be sent automatically.`,
       });
 
       // Reset form and navigate to dashboard
-      setFormData({
+      setPatientInfo({
         name: "",
         phone: "",
         age: "",
-        medicationName: "",
-        duration: "",
-        quantity: "",
         consentGiven: false,
       });
+      setMedications([{ id: crypto.randomUUID(), name: "", duration: "", quantity: "" }]);
 
       navigate("/dashboard");
     } catch (error: any) {
@@ -187,6 +209,8 @@ const RegisterCustomer = () => {
       setIsLoading(false);
     }
   };
+
+  const maxDuration = Math.max(...medications.map(med => parseInt(med.duration) || 0));
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,7 +240,7 @@ const RegisterCustomer = () => {
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Register New Patient</h1>
             <p className="text-muted-foreground text-lg">
-              Add patient details and medication to start automated follow-ups
+              Add patient details and medications to start automated follow-ups
             </p>
           </div>
 
@@ -237,9 +261,9 @@ const RegisterCustomer = () => {
                     <Label htmlFor="name">Full Name *</Label>
                     <Input
                       id="name"
-                      value={formData.name}
+                      value={patientInfo.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
+                        setPatientInfo({ ...patientInfo, name: e.target.value })
                       }
                       placeholder="Enter patient name"
                       required
@@ -251,9 +275,9 @@ const RegisterCustomer = () => {
                     <Input
                       id="phone"
                       type="tel"
-                      value={formData.phone}
+                      value={patientInfo.phone}
                       onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
+                        setPatientInfo({ ...patientInfo, phone: e.target.value })
                       }
                       placeholder="0XX XXX XXXX"
                       required
@@ -266,9 +290,9 @@ const RegisterCustomer = () => {
                   <Input
                     id="age"
                     type="number"
-                    value={formData.age}
+                    value={patientInfo.age}
                     onChange={(e) =>
-                      setFormData({ ...formData, age: e.target.value })
+                      setPatientInfo({ ...patientInfo, age: e.target.value })
                     }
                     placeholder="Enter age"
                     className="max-w-xs"
@@ -276,57 +300,88 @@ const RegisterCustomer = () => {
                 </div>
               </div>
 
-              {/* Medication Information Section */}
+              {/* Medications Section */}
               <div className="space-y-4 pt-6 border-t border-border">
-                <h2 className="text-2xl font-semibold flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                    2
-                  </span>
-                  Medication Details
-                </h2>
-
-                <div className="space-y-2">
-                  <Label htmlFor="medication">Medication Prescribed *</Label>
-                  <Input
-                    id="medication"
-                    value={formData.medicationName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, medicationName: e.target.value })
-                    }
-                    placeholder="e.g., Amoxicillin 500mg"
-                    required
-                  />
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-semibold flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                      2
+                    </span>
+                    Medications ({medications.length})
+                  </h2>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addMedication}
+                    className="flex items-center gap-2"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add Medication
+                  </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Treatment Duration (days) *</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      min="1"
-                      max="365"
-                      value={formData.duration}
-                      onChange={(e) =>
-                        setFormData({ ...formData, duration: e.target.value })
-                      }
-                      placeholder="e.g., 7"
-                      required
-                    />
-                  </div>
+                <div className="space-y-4">
+                  {medications.map((med, index) => (
+                    <Card key={med.id} className="p-4 bg-muted/30">
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Medication {index + 1}
+                        </span>
+                        {medications.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMedication(med.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="quantity">Quantity/Dosage *</Label>
-                    <Input
-                      id="quantity"
-                      value={formData.quantity}
-                      onChange={(e) =>
-                        setFormData({ ...formData, quantity: e.target.value })
-                      }
-                      placeholder="e.g., 2 tablets 3x daily"
-                      required
-                    />
-                  </div>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`medication-${med.id}`}>Medication Name *</Label>
+                          <Input
+                            id={`medication-${med.id}`}
+                            value={med.name}
+                            onChange={(e) => updateMedication(med.id, 'name', e.target.value)}
+                            placeholder="e.g., Amoxicillin 500mg"
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`duration-${med.id}`}>Treatment Duration (days) *</Label>
+                            <Input
+                              id={`duration-${med.id}`}
+                              type="number"
+                              min="1"
+                              max="365"
+                              value={med.duration}
+                              onChange={(e) => updateMedication(med.id, 'duration', e.target.value)}
+                              placeholder="e.g., 7"
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`quantity-${med.id}`}>Quantity/Dosage *</Label>
+                            <Input
+                              id={`quantity-${med.id}`}
+                              value={med.quantity}
+                              onChange={(e) => updateMedication(med.id, 'quantity', e.target.value)}
+                              placeholder="e.g., 2 tablets 3x daily"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               </div>
 
@@ -334,9 +389,9 @@ const RegisterCustomer = () => {
               <div className="flex items-center space-x-2 pt-4">
                 <Checkbox
                   id="consent"
-                  checked={formData.consentGiven}
+                  checked={patientInfo.consentGiven}
                   onCheckedChange={(checked) =>
-                    setFormData({ ...formData, consentGiven: checked === true })
+                    setPatientInfo({ ...patientInfo, consentGiven: checked === true })
                   }
                 />
                 <Label htmlFor="consent" className="text-sm">
@@ -345,7 +400,7 @@ const RegisterCustomer = () => {
               </div>
 
               {/* Reminder Preview */}
-              {formData.medicationName && formData.duration && (
+              {medications.some(med => med.name && med.duration) && (
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-start gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -356,13 +411,11 @@ const RegisterCustomer = () => {
                         Automated Schedule Preview
                       </h3>
                       <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>✓ Daily medication reminders will be sent</li>
-                        <li>
-                          ✓ Follow-up scheduled for day {formData.duration}
-                        </li>
-                        <li>✓ Adherence tracking enabled</li>
-                        {parseInt(formData.duration) >= 30 && (
-                          <li>✓ Refill reminder will be sent</li>
+                        <li>✓ {medications.filter(m => m.name).length} medication(s) will have daily reminders</li>
+                        <li>✓ {medications.filter(m => m.name && m.duration).length} follow-up(s) scheduled</li>
+                        <li>✓ Adherence tracking enabled for all medications</li>
+                        {maxDuration >= 30 && (
+                          <li>✓ Refill reminders will be sent for long-term medications</li>
                         )}
                       </ul>
                     </div>
@@ -388,10 +441,10 @@ const RegisterCustomer = () => {
           <Card className="p-6 mt-6 bg-muted/50">
             <h3 className="font-semibold mb-2">Quick Tips</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• The system will automatically schedule reminders based on the medication</li>
-              <li>• Follow-up dates are calculated from treatment duration</li>
+              <li>• You can add multiple medications for a single patient</li>
+              <li>• Each medication gets its own reminders and follow-up schedule</li>
+              <li>• The system will automatically schedule reminders based on each medication</li>
               <li>• You'll receive alerts when it's time to contact the patient</li>
-              <li>• SMS reminders are sent automatically to the patient's phone</li>
             </ul>
           </Card>
         </div>
