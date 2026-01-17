@@ -447,19 +447,21 @@ const Dashboard = () => {
             </Card>
           </Link>
 
-          <Card className="p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BarChart3Icon className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <div className="font-semibold text-lg">View Analytics</div>
-                <div className="text-sm text-muted-foreground">
-                  Track performance metrics
+          <Link to="/analytics">
+            <Card className="p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <BarChart3Icon className="h-6 w-6 text-success" />
+                </div>
+                <div>
+                  <div className="font-semibold text-lg">View Analytics</div>
+                  <div className="text-sm text-muted-foreground">
+                    Track performance metrics
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
         </div>
       </div>
     </div>
