@@ -1,133 +1,145 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
-const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
-const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER')
-const TWILIO_WHATSAPP_NUMBER = Deno.env.get('TWILIO_WHATSAPP_NUMBER')
+// Send SMS via Arkesel API V2
+async function sendSMS(to: string, message: string): Promise<{ success: boolean; error?: string }> {
+  const apiKey = Deno.env.get("ARKESEL_API_KEY");
+  const senderId = Deno.env.get("ARKESEL_SENDER_ID") || "PharmyCare";
 
-async function sendSMS(to: string, message: string) {
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`
-  
-  const body = new URLSearchParams({
-    To: to,
-    From: TWILIO_PHONE_NUMBER!,
-    Body: message
-  })
+  if (!apiKey) {
+    return { success: false, error: "ARKESEL_API_KEY not configured" };
+  }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: body.toString()
-  })
+  // Format phone number - ensure it starts with country code (Ghana: 233)
+  let formattedPhone = to.replace(/\s+/g, "").replace(/^0/, "233");
+  if (!formattedPhone.startsWith("233") && !formattedPhone.startsWith("+")) {
+    formattedPhone = "233" + formattedPhone;
+  }
+  formattedPhone = formattedPhone.replace("+", "");
 
-  return response.json()
-}
+  try {
+    const response = await fetch("https://sms.arkesel.com/api/v2/sms/send", {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: senderId,
+        message: message,
+        recipients: [formattedPhone],
+      }),
+    });
 
-async function sendWhatsApp(to: string, message: string) {
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`
-  
-  const body = new URLSearchParams({
-    To: `whatsapp:${to}`,
-    From: `whatsapp:${TWILIO_WHATSAPP_NUMBER}`,
-    Body: message
-  })
+    const result = await response.json();
+    console.log("Arkesel SMS response:", result);
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: body.toString()
-  })
-
-  return response.json()
+    if (response.ok && result.status === "success") {
+      return { success: true };
+    } else {
+      return { success: false, error: result.message || "Failed to send SMS" };
+    }
+  } catch (error: unknown) {
+    console.error("Error sending SMS via Arkesel:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: errorMessage };
+  }
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get pending reminders that are due
-    const now = new Date()
-    const { data: dueReminders, error: fetchError } = await supabaseClient
-      .from('reminders')
+    // Get all pending reminders that are due
+    const now = new Date().toISOString();
+    const { data: reminders, error: fetchError } = await supabase
+      .from("reminders")
       .select(`
         *,
         patient:patients(*)
       `)
-      .eq('status', 'pending')
-      .lte('scheduled_at', now.toISOString())
-      .limit(100)
+      .eq("status", "pending")
+      .lte("scheduled_at", now)
+      .limit(100);
 
-    if (fetchError) throw fetchError
+    if (fetchError) {
+      console.error("Error fetching reminders:", fetchError);
+      throw fetchError;
+    }
 
-    console.log(`Found ${dueReminders?.length || 0} due reminders`)
+    console.log(`Found ${reminders?.length || 0} pending reminders to send`);
 
-    const results = []
+    const results = [];
 
-    for (const reminder of dueReminders || []) {
-      try {
-        let result
+    for (const reminder of reminders || []) {
+      const phone = reminder.patient?.phone;
+      if (!phone) {
+        console.log(`No phone number for reminder ${reminder.id}`);
+        continue;
+      }
 
-        if (reminder.delivery_channel === 'sms') {
-          result = await sendSMS(reminder.patient.phone, reminder.message)
-        } else if (reminder.delivery_channel === 'whatsapp') {
-          result = await sendWhatsApp(reminder.patient.phone, reminder.message)
-        }
+      console.log(`Sending reminder to ${phone}: ${reminder.message}`);
 
-        // Update reminder status
-        await supabaseClient
-          .from('reminders')
+      const { success, error } = await sendSMS(phone, reminder.message);
+
+      if (success) {
+        // Update reminder status to sent
+        await supabase
+          .from("reminders")
           .update({
-            status: 'sent',
-            sent_at: now.toISOString()
+            status: "sent",
+            sent_at: new Date().toISOString(),
           })
-          .eq('id', reminder.id)
+          .eq("id", reminder.id);
 
-        results.push({ id: reminder.id, status: 'sent', result })
-        console.log(`Sent ${reminder.delivery_channel} reminder to ${reminder.patient.full_name}`)
-      } catch (error) {
-        // Update reminder with error
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        await supabaseClient
-          .from('reminders')
+        results.push({ id: reminder.id, status: "sent" });
+        console.log(`Sent SMS reminder to ${reminder.patient.full_name}`);
+      } else {
+        // Update reminder status to failed
+        await supabase
+          .from("reminders")
           .update({
-            status: 'failed',
-            error_message: errorMessage
+            status: "failed",
+            error_message: error,
           })
-          .eq('id', reminder.id)
+          .eq("id", reminder.id);
 
-        results.push({ id: reminder.id, status: 'failed', error: errorMessage })
-        console.error(`Failed to send reminder ${reminder.id}:`, error)
+        results.push({ id: reminder.id, status: "failed", error });
+        console.error(`Failed to send reminder ${reminder.id}:`, error);
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, processed: results.length, results }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  } catch (error) {
-    console.error('Error in send-reminders:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      JSON.stringify({
+        success: true,
+        message: `Processed ${results.length} reminders`,
+        results,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
+  } catch (error: unknown) {
+    console.error("Error in send-reminders function:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      JSON.stringify({ success: false, error: errorMessage }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      }
+    );
   }
-})
+});
