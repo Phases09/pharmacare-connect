@@ -38,8 +38,8 @@ const FollowUps = () => {
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFollowUp, setSelectedFollowUp] = useState<string | null>(null);
-  const [outcome, setOutcome] = useState("");
-  const [notes, setNotes] = useState("");
+  const [outcomes, setOutcomes] = useState<Record<string, string>>({});
+  const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -93,8 +93,17 @@ const FollowUps = () => {
 
       fetchFollowUps();
       setSelectedFollowUp(null);
-      setOutcome("");
-      setNotes("");
+      // Clear the outcome/notes for this follow-up
+      setOutcomes(prev => {
+        const newState = { ...prev };
+        delete newState[followUpId];
+        return newState;
+      });
+      setNotesMap(prev => {
+        const newState = { ...prev };
+        delete newState[followUpId];
+        return newState;
+      });
     } catch (error) {
       console.error('Error updating follow-up:', error);
       toast({
@@ -272,7 +281,10 @@ const FollowUps = () => {
 
                         {selectedFollowUp === followUp.id && (
                           <div className="space-y-3 pt-4 border-t">
-                            <Select value={outcome} onValueChange={setOutcome}>
+                            <Select 
+                              value={outcomes[followUp.id] || ""} 
+                              onValueChange={(val) => setOutcomes(prev => ({ ...prev, [followUp.id]: val }))}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select outcome" />
                               </SelectTrigger>
@@ -286,8 +298,8 @@ const FollowUps = () => {
 
                             <Textarea
                               placeholder="Add notes..."
-                              value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
+                              value={notesMap[followUp.id] || ""}
+                              onChange={(e) => setNotesMap(prev => ({ ...prev, [followUp.id]: e.target.value }))}
                             />
 
                             <div className="flex gap-2">
@@ -296,12 +308,12 @@ const FollowUps = () => {
                                 onClick={() => {
                                   updateFollowUp(followUp.id, {
                                     status: 'completed',
-                                    outcome,
-                                    notes,
+                                    outcome: outcomes[followUp.id],
+                                    notes: notesMap[followUp.id] || "",
                                     contacted_at: new Date().toISOString()
                                   });
                                 }}
-                                disabled={!outcome}
+                                disabled={!outcomes[followUp.id]}
                               >
                                 Save
                               </Button>
@@ -310,8 +322,6 @@ const FollowUps = () => {
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedFollowUp(null);
-                                  setOutcome("");
-                                  setNotes("");
                                 }}
                               >
                                 Cancel
@@ -363,7 +373,10 @@ const FollowUps = () => {
 
                         {selectedFollowUp === followUp.id && (
                           <div className="space-y-3 pt-4 border-t">
-                            <Select value={outcome} onValueChange={setOutcome}>
+                            <Select 
+                              value={outcomes[followUp.id] || ""} 
+                              onValueChange={(val) => setOutcomes(prev => ({ ...prev, [followUp.id]: val }))}
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select outcome" />
                               </SelectTrigger>
@@ -377,8 +390,8 @@ const FollowUps = () => {
 
                             <Textarea
                               placeholder="Add notes..."
-                              value={notes}
-                              onChange={(e) => setNotes(e.target.value)}
+                              value={notesMap[followUp.id] || ""}
+                              onChange={(e) => setNotesMap(prev => ({ ...prev, [followUp.id]: e.target.value }))}
                             />
 
                             <div className="flex gap-2">
@@ -387,12 +400,12 @@ const FollowUps = () => {
                                 onClick={() => {
                                   updateFollowUp(followUp.id, {
                                     status: 'completed',
-                                    outcome,
-                                    notes,
+                                    outcome: outcomes[followUp.id],
+                                    notes: notesMap[followUp.id] || "",
                                     contacted_at: new Date().toISOString()
                                   });
                                 }}
-                                disabled={!outcome}
+                                disabled={!outcomes[followUp.id]}
                               >
                                 Save
                               </Button>
@@ -401,8 +414,6 @@ const FollowUps = () => {
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedFollowUp(null);
-                                  setOutcome("");
-                                  setNotes("");
                                 }}
                               >
                                 Cancel
