@@ -414,7 +414,7 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
           <Link to="/register">
             <Card className="p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
               <div className="flex items-center gap-4">
@@ -422,9 +422,25 @@ const Dashboard = () => {
                   <PlusIcon className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <div className="font-semibold text-lg">Register Patient</div>
+                  <div className="font-semibold text-lg">New Patient</div>
                   <div className="text-sm text-muted-foreground">
-                    Add new patient & medication
+                    Register patient & meds
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </Link>
+
+          <Link to="/add-medications">
+            <Card className="p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <PillIcon className="h-6 w-6 text-warning" />
+                </div>
+                <div>
+                  <div className="font-semibold text-lg">Add Medications</div>
+                  <div className="text-sm text-muted-foreground">
+                    For existing patients
                   </div>
                 </div>
               </div>
