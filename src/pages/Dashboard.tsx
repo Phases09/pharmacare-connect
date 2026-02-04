@@ -12,7 +12,9 @@ import {
   PlusIcon,
   BarChart3Icon,
   LogOutIcon,
+  DownloadIcon,
 } from "lucide-react";
+import { exportPatientsToExcel } from "@/lib/exportToExcel";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +57,7 @@ const Dashboard = () => {
   });
   const [upcomingFollowUps, setUpcomingFollowUps] = useState<FollowUp[]>([]);
   const [recentActivity, setRecentActivity] = useState<Reminder[]>([]);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -148,6 +151,34 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
+  const handleExportPatients = async () => {
+    if (!user) return;
+    
+    setExporting(true);
+    try {
+      const { data: patients, error } = await supabase
+        .from("patients")
+        .select("id, full_name, phone, age, consent_given, created_at")
+        .eq("pharmacist_id", user.id)
+        .order("full_name", { ascending: true });
+
+      if (error) throw error;
+
+      if (!patients || patients.length === 0) {
+        toast.error("No patients to export");
+        return;
+      }
+
+      exportPatientsToExcel(patients, "pharmacare-patients");
+      toast.success(`Exported ${patients.length} patients to Excel`);
+    } catch (error) {
+      console.error("Error exporting patients:", error);
+      toast.error("Failed to export patients");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const getFollowUpDueDate = (scheduledDate: string) => {
     const date = new Date(scheduledDate);
     const today = new Date();
@@ -238,6 +269,14 @@ const Dashboard = () => {
               </nav>
             </div>
             <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                onClick={handleExportPatients}
+                disabled={exporting}
+              >
+                <DownloadIcon className="h-4 w-4 mr-2" />
+                {exporting ? "Exporting..." : "Export Patients"}
+              </Button>
               <Link to="/register">
                 <Button>
                   <PlusIcon className="h-4 w-4 mr-2" />
