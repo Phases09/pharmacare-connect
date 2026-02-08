@@ -37,12 +37,14 @@ Deno.serve(async (req) => {
     const reminders = []
 
     // Create dose reminders based on dosage frequency
+    // Start reminders 24 hours after patient is added
+    const oneDayInMs = 24 * 60 * 60 * 1000
     if (medication.dosage_frequency_hours && medication.treatment_duration_days) {
       const dosesPerDay = 24 / medication.dosage_frequency_hours
       const totalDoses = dosesPerDay * medication.treatment_duration_days
 
       for (let i = 0; i < totalDoses; i++) {
-        const scheduledAt = new Date(startDate.getTime() + (i * medication.dosage_frequency_hours * 60 * 60 * 1000))
+        const scheduledAt = new Date(startDate.getTime() + oneDayInMs + (i * medication.dosage_frequency_hours * 60 * 60 * 1000))
         
         reminders.push({
           patient_id: patient.id,
