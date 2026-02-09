@@ -1,229 +1,154 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { 
-  ActivityIcon, 
-  BellIcon, 
-  CalendarIcon, 
-  LineChartIcon, 
-  PillIcon, 
-  UsersIcon,
-  CheckCircle2Icon,
-  ClockIcon,
-  TrendingUpIcon
+import {
+  ActivityIcon, BellIcon, CalendarIcon, LineChartIcon,
+  PillIcon, UsersIcon, CheckCircle2Icon, ClockIcon, TrendingUpIcon
 } from "lucide-react";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PillIcon className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              PharmaCare
-            </span>
+      {/* Nav */}
+      <nav className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="container mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+              <PillIcon className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">PharmaCare</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard">
-              <Button variant="ghost">Dashboard</Button>
+          <div className="flex items-center gap-3">
+            <Link to="/auth">
+              <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
-            <Link to="/dashboard">
-              <Button>Get Started</Button>
+            <Link to="/auth">
+              <Button size="sm">Get Started</Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/5" />
-        <div className="container mx-auto px-4 py-24 relative">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <div className="inline-block animate-in fade-in slide-in-from-bottom-4 duration-1000">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <ActivityIcon className="h-4 w-4" />
-                Smart Pharmacy Management
-              </span>
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150">
-              Never Miss a <br />
-              <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-background to-accent/5" />
+        <div className="container mx-auto px-4 lg:px-6 py-20 lg:py-32 relative">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+              <ActivityIcon className="h-3.5 w-3.5" />
+              Smart Pharmacy Management
+            </span>
+
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]">
+              Never Miss a{" "}
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Patient Follow-Up
               </span>
             </h1>
-            
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
-              Automated medication reminders, intelligent follow-ups, and data-driven insights 
-              to improve patient outcomes and boost pharmacy revenue.
+
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+              Automated medication reminders, intelligent follow-ups, and data-driven insights to improve patient outcomes.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
-              <Link to="/dashboard">
-                <Button size="lg" className="text-lg px-8">
-                  Start Free Trial
-                </Button>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <Link to="/auth">
+                <Button size="lg" className="text-base px-6">Start Free Trial</Button>
               </Link>
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                Watch Demo
-              </Button>
+              <Button size="lg" variant="outline" className="text-base px-6">Watch Demo</Button>
             </div>
 
-            <div className="flex items-center justify-center gap-8 pt-8 text-sm text-muted-foreground animate-in fade-in duration-1000 delay-700">
-              <div className="flex items-center gap-2">
-                <CheckCircle2Icon className="h-5 w-5 text-success" />
-                <span>No credit card required</span>
+            <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2Icon className="h-4 w-4 text-success" />
+                No credit card required
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2Icon className="h-5 w-5 text-success" />
-                <span>14-day free trial</span>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2Icon className="h-4 w-4 text-success" />
+                14-day free trial
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-card/30">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      {/* Stats */}
+      <section className="py-14 bg-muted/30">
+        <div className="container mx-auto px-4 lg:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { value: "95%", label: "Patient Adherence", icon: CheckCircle2Icon },
               { value: "3x", label: "Repeat Visits", icon: TrendingUpIcon },
               { value: "80%", label: "Time Saved", icon: ClockIcon },
               { value: "50K+", label: "Reminders Sent", icon: BellIcon },
-            ].map((stat, index) => (
-              <Card key={index} className="p-6 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                <stat.icon className="h-8 w-8 text-primary mx-auto mb-3" />
-                <div className="text-4xl font-bold text-foreground mb-2">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+            ].map((stat, i) => (
+              <Card key={i} className="p-5 text-center hover:shadow-md transition-shadow">
+                <stat.icon className="h-6 w-6 text-primary mx-auto mb-2" />
+                <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
               </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+      {/* Features */}
+      <section className="py-20">
+        <div className="container mx-auto px-4 lg:px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
               Everything You Need to <span className="text-primary">Care for Patients</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive tools designed to improve patient outcomes and pharmacy operations
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Comprehensive tools designed to improve patient outcomes and pharmacy operations.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              {
-                icon: BellIcon,
-                title: "Automated Reminders",
-                description: "Send timely medication reminders via SMS and WhatsApp to improve adherence",
-                color: "primary"
-              },
-              {
-                icon: CalendarIcon,
-                title: "Smart Follow-Ups",
-                description: "Automatically schedule and track follow-ups based on treatment duration",
-                color: "accent"
-              },
-              {
-                icon: PillIcon,
-                title: "Drug Database",
-                description: "Comprehensive database with dosage rules and therapy guidelines",
-                color: "success"
-              },
-              {
-                icon: LineChartIcon,
-                title: "Analytics Dashboard",
-                description: "Track adherence rates, revenue impact, and customer engagement metrics",
-                color: "warning"
-              },
-              {
-                icon: UsersIcon,
-                title: "Patient Management",
-                description: "Quick registration and complete patient history at your fingertips",
-                color: "primary"
-              },
-              {
-                icon: ActivityIcon,
-                title: "Refill Alerts",
-                description: "Predict and remind patients when it's time to refill chronic medications",
-                color: "accent"
-              },
-            ].map((feature, index) => {
-              const isAnalytics = feature.title === "Analytics Dashboard";
-              const CardContent = (
-                <Card 
-                  key={index} 
-                  className={`p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group ${isAnalytics ? 'cursor-pointer' : ''}`}
-                >
-                  <div className={`h-12 w-12 rounded-lg bg-${feature.color}/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <feature.icon className={`h-6 w-6 text-${feature.color}`} />
+              { icon: BellIcon, title: "Automated Reminders", description: "Timely SMS and WhatsApp medication reminders" },
+              { icon: CalendarIcon, title: "Smart Follow-Ups", description: "Auto-scheduled follow-ups based on treatment" },
+              { icon: PillIcon, title: "Drug Database", description: "Dosage rules and therapy guidelines" },
+              { icon: LineChartIcon, title: "Analytics Dashboard", description: "Track adherence, revenue, and engagement", link: "/analytics" },
+              { icon: UsersIcon, title: "Patient Management", description: "Quick registration and complete history" },
+              { icon: ActivityIcon, title: "Refill Alerts", description: "Predict and remind for chronic medication refills" },
+            ].map((feature, i) => {
+              const content = (
+                <Card key={i} className="p-5 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                    <feature.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+                  <h3 className="font-semibold mb-1">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </Card>
               );
-
-              return isAnalytics ? (
-                <Link key={index} to="/analytics">
-                  {CardContent}
-                </Link>
-              ) : CardContent;
+              return feature.link ? <Link key={i} to={feature.link}>{content}</Link> : content;
             })}
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+      {/* How It Works */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4 lg:px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
               Simple Setup, <span className="text-primary">Powerful Results</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Get started in minutes with our streamlined workflow
-            </p>
           </div>
-
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-2xl mx-auto space-y-8">
             {[
-              {
-                step: "1",
-                title: "Register Patient & Medication",
-                description: "Quick entry of customer details and prescribed medication"
-              },
-              {
-                step: "2",
-                title: "Auto-Schedule Reminders",
-                description: "System automatically creates reminder schedule based on drug database"
-              },
-              {
-                step: "3",
-                title: "Track & Follow Up",
-                description: "Receive alerts for follow-ups and track patient adherence"
-              },
-              {
-                step: "4",
-                title: "Analyze & Improve",
-                description: "Use insights to improve patient care and pharmacy operations"
-              }
-            ].map((item, index) => (
-              <div key={index} className="flex gap-6 mb-12 last:mb-0">
-                <div className="flex-shrink-0">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-2xl font-bold text-primary-foreground shadow-lg">
-                    {item.step}
-                  </div>
+              { step: "1", title: "Register Patient & Medication", description: "Quick entry of customer details and prescriptions" },
+              { step: "2", title: "Auto-Schedule Reminders", description: "System creates reminders based on drug database" },
+              { step: "3", title: "Track & Follow Up", description: "Receive alerts and track patient adherence" },
+              { step: "4", title: "Analyze & Improve", description: "Use insights to improve care and operations" },
+            ].map((item, i) => (
+              <div key={i} className="flex gap-4">
+                <div className="h-12 w-12 shrink-0 rounded-full bg-primary flex items-center justify-center text-lg font-bold text-primary-foreground shadow-sm">
+                  {item.step}
                 </div>
-                <div className="flex-grow pt-2">
-                  <h3 className="text-2xl font-semibold mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground text-lg">{item.description}</p>
+                <div className="pt-1">
+                  <h3 className="text-lg font-semibold mb-0.5">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.description}</p>
                 </div>
               </div>
             ))}
@@ -231,94 +156,43 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+      {/* Pricing */}
+      <section className="py-20">
+        <div className="container mx-auto px-4 lg:px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
               Simple, <span className="text-primary">Transparent Pricing</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Choose the plan that fits your pharmacy's needs
-            </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {[
-              {
-                name: "Starter",
-                price: "GH₵ 200",
-                period: "/month",
-                features: [
-                  "Up to 100 patients",
-                  "Basic reminders (SMS)",
-                  "Follow-up tracking",
-                  "Basic analytics",
-                  "Email support"
-                ]
-              },
-              {
-                name: "Professional",
-                price: "GH₵ 400",
-                period: "/month",
-                popular: true,
-                features: [
-                  "Up to 500 patients",
-                  "SMS + WhatsApp reminders",
-                  "Advanced analytics",
-                  "Drug database access",
-                  "Priority support",
-                  "Custom branding"
-                ]
-              },
-              {
-                name: "Enterprise",
-                price: "GH₵ 800",
-                period: "/month",
-                features: [
-                  "Unlimited patients",
-                  "All reminder channels",
-                  "Full analytics suite",
-                  "API integration",
-                  "Dedicated support",
-                  "Custom features"
-                ]
-              }
-            ].map((plan, index) => (
-              <Card 
-                key={index} 
-                className={`p-8 relative ${plan.popular ? 'border-primary border-2 shadow-xl scale-105' : ''}`}
-              >
+              { name: "Starter", price: "GH₵ 200", features: ["Up to 100 patients", "Basic SMS reminders", "Follow-up tracking", "Basic analytics", "Email support"] },
+              { name: "Professional", price: "GH₵ 400", popular: true, features: ["Up to 500 patients", "SMS + WhatsApp", "Advanced analytics", "Drug database", "Priority support", "Custom branding"] },
+              { name: "Enterprise", price: "GH₵ 800", features: ["Unlimited patients", "All channels", "Full analytics", "API integration", "Dedicated support", "Custom features"] },
+            ].map((plan, i) => (
+              <Card key={i} className={`p-6 relative ${plan.popular ? "border-primary border-2 shadow-lg scale-[1.02]" : ""}`}>
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-4 py-1 rounded-full text-sm font-semibold">
-                      Most Popular
-                    </span>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-primary text-primary-foreground px-3 py-0.5 rounded-full text-xs font-semibold">Most Popular</span>
                   </div>
                 )}
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                <div className="text-center mb-5">
+                  <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
                   <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground ml-1">{plan.period}</span>
+                    <span className="text-3xl font-bold">{plan.price}</span>
+                    <span className="text-muted-foreground text-sm ml-1">/mo</span>
                   </div>
                 </div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, fIndex) => (
-                    <li key={fIndex} className="flex items-center gap-2">
-                      <CheckCircle2Icon className="h-5 w-5 text-success flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
+                <ul className="space-y-2 mb-6">
+                  {plan.features.map((f, j) => (
+                    <li key={j} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2Icon className="h-4 w-4 text-success flex-shrink-0" />
+                      {f}
                     </li>
                   ))}
                 </ul>
-                <Link to="/dashboard">
-                  <Button 
-                    className="w-full" 
-                    variant={plan.popular ? "default" : "outline"}
-                    size="lg"
-                  >
-                    Get Started
-                  </Button>
+                <Link to="/auth">
+                  <Button className="w-full" variant={plan.popular ? "default" : "outline"}>Get Started</Button>
                 </Link>
               </Card>
             ))}
@@ -326,38 +200,34 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-accent" />
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl mx-auto text-center text-primary-foreground">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Transform Your Pharmacy?
-            </h2>
-            <p className="text-xl mb-8 opacity-90">
-              Join hundreds of pharmacies improving patient care with PharmaCare
-            </p>
-            <Link to="/dashboard">
-              <Button size="lg" variant="secondary" className="text-lg px-8">
-                Start Your Free Trial
-              </Button>
-            </Link>
-          </div>
+      {/* CTA */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/85 to-primary/70" />
+        <div className="container mx-auto px-4 lg:px-6 relative z-10 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
+            Ready to Transform Your Pharmacy?
+          </h2>
+          <p className="text-lg text-primary-foreground/85 mb-6 max-w-md mx-auto">
+            Join hundreds of pharmacies improving patient care with PharmaCare.
+          </p>
+          <Link to="/auth">
+            <Button size="lg" variant="secondary" className="text-base px-6">Start Your Free Trial</Button>
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 bg-card/50">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <PillIcon className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-foreground">PharmaCare</span>
+      <footer className="border-t py-8 bg-card/50">
+        <div className="container mx-auto px-4 lg:px-6 flex flex-col md:flex-row justify-between items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
+              <PillIcon className="h-4 w-4 text-primary-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              © 2025 PharmaCare. Improving patient outcomes, one reminder at a time.
-            </p>
+            <span className="font-bold">PharmaCare</span>
           </div>
+          <p className="text-xs text-muted-foreground">
+            © 2025 PharmaCare. Improving patient outcomes, one reminder at a time.
+          </p>
         </div>
       </footer>
     </div>

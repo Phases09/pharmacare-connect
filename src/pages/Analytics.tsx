@@ -1,55 +1,19 @@
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from "recharts";
 import {
-  TrendingUpIcon,
-  UsersIcon,
-  BellIcon,
-  CalendarIcon,
-  ActivityIcon,
-  PillIcon,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
+import { TrendingUpIcon, UsersIcon, BellIcon, CalendarIcon, ActivityIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import DashboardLayout from "@/components/DashboardLayout";
 
-interface ReminderStats {
-  sent: number;
-  pending: number;
-  failed: number;
-}
-
-interface FollowUpStats {
-  completed: number;
-  pending: number;
-}
-
-interface MedicationCategory {
-  category: string;
-  count: number;
-}
-
-interface MonthlyData {
-  month: string;
-  patients: number;
-  reminders: number;
-}
+interface ReminderStats { sent: number; pending: number; failed: number; }
+interface FollowUpStats { completed: number; pending: number; }
+interface MedicationCategory { category: string; count: number; }
+interface MonthlyData { month: string; patients: number; reminders: number; }
 
 const Analytics = () => {
   const { user } = useAuth();
@@ -61,202 +25,87 @@ const Analytics = () => {
   const [medicationCategories, setMedicationCategories] = useState<MedicationCategory[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
 
-  useEffect(() => {
-    if (user) {
-      fetchAnalyticsData();
-    }
-  }, [user]);
+  useEffect(() => { if (user) fetchAnalyticsData(); }, [user]);
 
   const fetchAnalyticsData = async () => {
     if (!user) return;
-    
     try {
       setLoading(true);
-
-      // Get patient IDs for this pharmacist
-      const { data: patients } = await supabase
-        .from("patients")
-        .select("id, created_at")
-        .eq("pharmacist_id", user.id);
-
+      const { data: patients } = await supabase.from("patients").select("id, created_at").eq("pharmacist_id", user.id);
       const patientIds = patients?.map(p => p.id) || [];
       setTotalPatients(patientIds.length);
 
-      // Fetch reminders stats
       if (patientIds.length > 0) {
-        const { data: reminders } = await supabase
-          .from("reminders")
-          .select("status")
-          .in("patient_id", patientIds);
-
+        const { data: reminders } = await supabase.from("reminders").select("status").in("patient_id", patientIds);
         if (reminders) {
           setTotalReminders(reminders.length);
-          setReminderStats({
-            sent: reminders.filter(r => r.status === 'sent').length,
-            pending: reminders.filter(r => r.status === 'pending').length,
-            failed: reminders.filter(r => r.status === 'failed').length,
-          });
+          setReminderStats({ sent: reminders.filter(r => r.status === 'sent').length, pending: reminders.filter(r => r.status === 'pending').length, failed: reminders.filter(r => r.status === 'failed').length });
         }
       }
 
-      // Fetch follow-up stats
-      const { data: followUps } = await supabase
-        .from("follow_ups")
-        .select("status")
-        .eq("pharmacist_id", user.id);
+      const { data: followUps } = await supabase.from("follow_ups").select("status").eq("pharmacist_id", user.id);
+      if (followUps) setFollowUpStats({ completed: followUps.filter(f => f.status === 'completed').length, pending: followUps.filter(f => f.status === 'pending').length });
 
-      if (followUps) {
-        setFollowUpStats({
-          completed: followUps.filter(f => f.status === 'completed').length,
-          pending: followUps.filter(f => f.status === 'pending').length,
-        });
-      }
-
-      // Fetch medication categories
       if (patientIds.length > 0) {
-        const { data: patientMeds } = await supabase
-          .from("patient_medications")
-          .select("medication_id, medications(category)")
-          .in("patient_id", patientIds);
-
+        const { data: patientMeds } = await supabase.from("patient_medications").select("medication_id, medications(category)").in("patient_id", patientIds);
         if (patientMeds) {
           const categoryMap: Record<string, number> = {};
-          patientMeds.forEach((pm: any) => {
-            const cat = pm.medications?.category || "Other";
-            categoryMap[cat] = (categoryMap[cat] || 0) + 1;
-          });
-          
-          setMedicationCategories(
-            Object.entries(categoryMap).map(([category, count]) => ({
-              category,
-              count,
-            }))
-          );
+          patientMeds.forEach((pm: any) => { const cat = pm.medications?.category || "Other"; categoryMap[cat] = (categoryMap[cat] || 0) + 1; });
+          setMedicationCategories(Object.entries(categoryMap).map(([category, count]) => ({ category, count })));
         }
       }
 
-      // Generate monthly data from patients
       if (patients && patients.length > 0) {
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const monthCounts: Record<string, { patients: number; reminders: number }> = {};
-        
-        // Initialize last 6 months
         const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const key = `${d.getFullYear()}-${d.getMonth()}`;
-          monthCounts[key] = { patients: 0, reminders: 0 };
-        }
-
-        // Count patients by month
-        patients.forEach(p => {
-          const d = new Date(p.created_at);
-          const key = `${d.getFullYear()}-${d.getMonth()}`;
-          if (monthCounts[key] !== undefined) {
-            monthCounts[key].patients++;
-          }
-        });
-
-        setMonthlyData(
-          Object.entries(monthCounts).map(([key, val]) => {
-            const [year, month] = key.split("-").map(Number);
-            return {
-              month: monthNames[month],
-              patients: val.patients,
-              reminders: val.reminders,
-            };
-          })
-        );
+        for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); monthCounts[`${d.getFullYear()}-${d.getMonth()}`] = { patients: 0, reminders: 0 }; }
+        patients.forEach(p => { const d = new Date(p.created_at); const key = `${d.getFullYear()}-${d.getMonth()}`; if (monthCounts[key] !== undefined) monthCounts[key].patients++; });
+        setMonthlyData(Object.entries(monthCounts).map(([key, val]) => { const [, month] = key.split("-").map(Number); return { month: monthNames[month], patients: val.patients, reminders: val.reminders }; }));
       }
-
-    } catch (error) {
-      console.error("Error fetching analytics:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { console.error("Error fetching analytics:", error); }
+    finally { setLoading(false); }
   };
 
-  const adherenceRate = totalReminders > 0 
-    ? Math.round((reminderStats.sent / totalReminders) * 100) 
-    : 0;
-
-  const followUpCompletionRate = (followUpStats.completed + followUpStats.pending) > 0
-    ? Math.round((followUpStats.completed / (followUpStats.completed + followUpStats.pending)) * 100)
-    : 0;
+  const adherenceRate = totalReminders > 0 ? Math.round((reminderStats.sent / totalReminders) * 100) : 0;
+  const followUpCompletionRate = (followUpStats.completed + followUpStats.pending) > 0 ? Math.round((followUpStats.completed / (followUpStats.completed + followUpStats.pending)) * 100) : 0;
 
   const reminderData = [
-    { name: "Sent", value: reminderStats.sent, color: "hsl(var(--success))" },
-    { name: "Pending", value: reminderStats.pending, color: "hsl(var(--primary))" },
-    { name: "Failed", value: reminderStats.failed, color: "hsl(var(--destructive))" },
+    { name: "Sent", value: reminderStats.sent, color: "hsl(152, 60%, 40%)" },
+    { name: "Pending", value: reminderStats.pending, color: "hsl(174, 62%, 38%)" },
+    { name: "Failed", value: reminderStats.failed, color: "hsl(0, 72%, 51%)" },
   ].filter(d => d.value > 0);
-
-  const stats = [
-    {
-      title: "Total Patients",
-      value: totalPatients.toString(),
-      icon: UsersIcon,
-    },
-    {
-      title: "Adherence Rate",
-      value: `${adherenceRate}%`,
-      icon: TrendingUpIcon,
-    },
-    {
-      title: "Reminders Sent",
-      value: reminderStats.sent.toString(),
-      icon: BellIcon,
-    },
-    {
-      title: "Follow-ups Done",
-      value: followUpStats.completed.toString(),
-      icon: CalendarIcon,
-    },
-  ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading analytics...</p>
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-32">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/">
-                <div className="flex items-center gap-2">
-                  <PillIcon className="h-6 w-6 text-primary" />
-                  <span className="text-xl font-bold">PharmaCare</span>
-                </div>
-              </Link>
-              <div className="h-6 w-px bg-border" />
-              <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
-            </div>
-            <Link to="/dashboard">
-              <Button variant="outline">Back to Dashboard</Button>
-            </Link>
-          </div>
+    <DashboardLayout>
+      <div className="container mx-auto px-4 lg:px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight mb-1">Analytics</h1>
+          <p className="text-muted-foreground">Track performance metrics and patient outcomes.</p>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <stat.icon className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="text-3xl font-bold mb-1">{stat.value}</div>
-              <div className="text-sm text-muted-foreground">{stat.title}</div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: "Total Patients", value: totalPatients, icon: UsersIcon },
+            { label: "Adherence Rate", value: `${adherenceRate}%`, icon: TrendingUpIcon },
+            { label: "Reminders Sent", value: reminderStats.sent, icon: BellIcon },
+            { label: "Follow-ups Done", value: followUpStats.completed, icon: CalendarIcon },
+          ].map((stat, i) => (
+            <Card key={i} className="p-5">
+              <stat.icon className="h-4 w-4 text-muted-foreground mb-2" />
+              <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+              <div className="text-xs text-muted-foreground">{stat.label}</div>
             </Card>
           ))}
         </div>
@@ -270,228 +119,132 @@ const Analytics = () => {
             <TabsTrigger value="followups">Follow-ups</TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Patient Registrations by Month
-                </h3>
+                <h3 className="text-sm font-semibold mb-4">Patient Registrations</h3>
                 {monthlyData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={monthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="patients"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        name="New Patients"
-                      />
+                      <Line type="monotone" dataKey="patients" stroke="hsl(174, 62%, 38%)" strokeWidth={2} dot={{ r: 4 }} name="New Patients" />
                     </LineChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No data available yet
-                  </div>
-                )}
+                ) : <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">No data yet</div>}
               </Card>
 
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Medication Categories
-                </h3>
+                <h3 className="text-sm font-semibold mb-4">Medication Categories</h3>
                 {medicationCategories.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={medicationCategories}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="category" />
-                      <YAxis />
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="category" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip />
-                      <Legend />
-                      <Bar
-                        dataKey="count"
-                        fill="hsl(var(--primary))"
-                        name="Prescriptions"
-                      />
+                      <Bar dataKey="count" fill="hsl(174, 62%, 38%)" radius={[4, 4, 0, 0]} name="Prescriptions" />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No medications recorded yet
-                  </div>
-                )}
+                ) : <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">No medications yet</div>}
               </Card>
             </div>
           </TabsContent>
 
-          {/* Adherence Tab */}
           <TabsContent value="adherence" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
-                    <ActivityIcon className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{adherenceRate}%</div>
-                    <div className="text-sm text-muted-foreground">
-                      Delivery Rate
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { label: "Delivery Rate", value: `${adherenceRate}%`, icon: ActivityIcon, color: "success" },
+                { label: "Reminders Delivered", value: reminderStats.sent, icon: TrendingUpIcon, color: "primary" },
+                { label: "Active Patients", value: totalPatients, icon: UsersIcon, color: "accent" },
+              ].map((s, i) => (
+                <Card key={i} className="p-5">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-10 w-10 rounded-full bg-${s.color}/10 flex items-center justify-center`}>
+                      <s.icon className={`h-5 w-5 text-${s.color}`} />
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold">{s.value}</div>
+                      <div className="text-xs text-muted-foreground">{s.label}</div>
                     </div>
                   </div>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <TrendingUpIcon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{reminderStats.sent}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Reminders Delivered
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                    <UsersIcon className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{totalPatients}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Active Patients
-                    </div>
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              ))}
             </div>
           </TabsContent>
 
-          {/* Reminders Tab */}
           <TabsContent value="reminders" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  Reminder Delivery Status
-                </h3>
+                <h3 className="text-sm font-semibold mb-4">Delivery Status</h3>
                 {reminderData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
-                      <Pie
-                        data={reminderData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) =>
-                          `${name} ${(percent * 100).toFixed(0)}%`
-                        }
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {reminderData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
+                      <Pie data={reminderData} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} outerRadius={95} dataKey="value">
+                        {reminderData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
                       </Pie>
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                    No reminders created yet
-                  </div>
-                )}
+                ) : <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">No reminders yet</div>}
               </Card>
 
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-6">
-                  Reminder Statistics
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Created</span>
-                    <span className="text-2xl font-bold">{totalReminders}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Sent Successfully</span>
-                    <span className="text-2xl font-bold text-success">{reminderStats.sent}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Pending</span>
-                    <span className="text-xl font-semibold">{reminderStats.pending}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Failed</span>
-                    <span className="text-xl font-semibold text-destructive">{reminderStats.failed}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Delivery Rate</span>
-                    <span className="text-xl font-semibold text-success">{adherenceRate}%</span>
-                  </div>
+                <h3 className="text-sm font-semibold mb-4">Statistics</h3>
+                <div className="space-y-3">
+                  {[
+                    { label: "Total Created", value: totalReminders },
+                    { label: "Sent Successfully", value: reminderStats.sent, className: "text-success" },
+                    { label: "Pending", value: reminderStats.pending },
+                    { label: "Failed", value: reminderStats.failed, className: "text-destructive" },
+                    { label: "Delivery Rate", value: `${adherenceRate}%`, className: "text-success" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                      <span className="text-sm text-muted-foreground">{item.label}</span>
+                      <span className={`text-lg font-semibold ${item.className || ""}`}>{item.value}</span>
+                    </div>
+                  ))}
                 </div>
               </Card>
             </div>
           </TabsContent>
 
-          {/* Follow-ups Tab */}
           <TabsContent value="followups" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="p-6">
-                <div className="text-sm text-muted-foreground mb-1">
-                  Completed
-                </div>
-                <div className="text-3xl font-bold text-success">{followUpStats.completed}</div>
-              </Card>
-              <Card className="p-6">
-                <div className="text-sm text-muted-foreground mb-1">Pending</div>
-                <div className="text-3xl font-bold text-warning">{followUpStats.pending}</div>
-              </Card>
-              <Card className="p-6">
-                <div className="text-sm text-muted-foreground mb-1">
-                  Completion Rate
-                </div>
-                <div className="text-3xl font-bold">{followUpCompletionRate}%</div>
-              </Card>
-              <Card className="p-6">
-                <div className="text-sm text-muted-foreground mb-1">
-                  Total
-                </div>
-                <div className="text-3xl font-bold">{followUpStats.completed + followUpStats.pending}</div>
-              </Card>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { label: "Completed", value: followUpStats.completed, className: "text-success" },
+                { label: "Pending", value: followUpStats.pending, className: "text-warning" },
+                { label: "Completion Rate", value: `${followUpCompletionRate}%` },
+                { label: "Total", value: followUpStats.completed + followUpStats.pending },
+              ].map((s, i) => (
+                <Card key={i} className="p-5">
+                  <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{s.label}</div>
+                  <div className={`text-2xl font-bold ${s.className || ""}`}>{s.value}</div>
+                </Card>
+              ))}
             </div>
 
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">
-                Follow-up Summary
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 bg-muted rounded-full h-4 overflow-hidden">
-                    <div 
-                      className="bg-success h-full transition-all duration-500"
-                      style={{ width: `${followUpCompletionRate}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium w-12">{followUpCompletionRate}%</span>
+              <h3 className="text-sm font-semibold mb-4">Summary</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-3 w-3 rounded-full bg-success" />
+                  <span className="text-sm flex-1">Completed follow-ups</span>
+                  <span className="font-semibold">{followUpStats.completed}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {followUpStats.completed} out of {followUpStats.completed + followUpStats.pending} follow-ups completed
-                </p>
+                <div className="flex items-center gap-3">
+                  <div className="h-3 w-3 rounded-full bg-warning" />
+                  <span className="text-sm flex-1">Pending follow-ups</span>
+                  <span className="font-semibold">{followUpStats.pending}</span>
+                </div>
               </div>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
