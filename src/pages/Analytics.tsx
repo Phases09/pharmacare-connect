@@ -112,11 +112,11 @@ const Analytics = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="adherence">Adherence</TabsTrigger>
-            <TabsTrigger value="reminders">Reminders</TabsTrigger>
-            <TabsTrigger value="followups">Follow-ups</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="adherence" className="text-xs sm:text-sm">Adherence</TabsTrigger>
+            <TabsTrigger value="reminders" className="text-xs sm:text-sm">Reminders</TabsTrigger>
+            <TabsTrigger value="followups" className="text-xs sm:text-sm">Follow-ups</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
