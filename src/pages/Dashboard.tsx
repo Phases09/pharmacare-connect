@@ -78,11 +78,27 @@ const Dashboard = () => {
 
       const patientIds = patientData?.map((p) => p.id) || [];
 
-      const { count: remindersCount } = await supabase
-        .from("reminders")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending")
-        .in("patient_id", patientIds.length > 0 ? patientIds : [""]);
+      let remindersCount = 0;
+      let totalRemindersCount = 0;
+      let sentRemindersCount = 0;
+
+      if (patientIds.length > 0) {
+        const { count } = await supabase
+          .from("reminders")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "pending")
+          .in("patient_id", patientIds);
+        remindersCount = count || 0;
+
+        const { data: allReminders } = await supabase
+          .from("reminders")
+          .select("status")
+          .in("patient_id", patientIds);
+        if (allReminders) {
+          totalRemindersCount = allReminders.length;
+          sentRemindersCount = allReminders.filter(r => r.status === "sent").length;
+        }
+      }
 
       const today = new Date().toISOString().split("T")[0];
       const { count: followUpsCount } = await supabase
@@ -111,11 +127,15 @@ const Dashboard = () => {
         .order("created_at", { ascending: false })
         .limit(4);
 
+      const adherenceRate = totalRemindersCount > 0
+        ? Math.round((sentRemindersCount / totalRemindersCount) * 100)
+        : 0;
+
       setStats({
         totalPatients: patientsCount || 0,
-        activeReminders: remindersCount || 0,
+        activeReminders: remindersCount,
         followUpsDue: followUpsCount || 0,
-        adherenceRate: 94,
+        adherenceRate,
       });
       setUpcomingFollowUps(followUpsData || []);
       setRecentActivity(remindersData || []);
