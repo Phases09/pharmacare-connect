@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import {
   ActivityIcon, BellIcon, CalendarIcon, LineChartIcon,
-  PillIcon, UsersIcon, CheckCircle2Icon, ClockIcon, TrendingUpIcon
+  PillIcon, UsersIcon
 } from "lucide-react";
 
 const Index = () => {
@@ -52,41 +52,9 @@ const Index = () => {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Link to="/auth" className="w-full sm:w-auto">
-                <Button size="lg" className="text-base px-6 w-full sm:w-auto">Start Free Trial</Button>
+                <Button size="lg" className="text-base px-6 w-full sm:w-auto">Get Started</Button>
               </Link>
-              <Button size="lg" variant="outline" className="text-base px-6 w-full sm:w-auto">Watch Demo</Button>
             </div>
-
-            <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2Icon className="h-4 w-4 text-success" />
-                No credit card required
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2Icon className="h-4 w-4 text-success" />
-                14-day free trial
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-14 bg-muted/30">
-        <div className="container mx-auto px-4 lg:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { value: "95%", label: "Patient Adherence", icon: CheckCircle2Icon },
-              { value: "3x", label: "Repeat Visits", icon: TrendingUpIcon },
-              { value: "80%", label: "Time Saved", icon: ClockIcon },
-              { value: "50K+", label: "Reminders Sent", icon: BellIcon },
-            ].map((stat, i) => (
-              <Card key={i} className="p-5 text-center hover:shadow-md transition-shadow">
-                <stat.icon className="h-6 w-6 text-primary mx-auto mb-2" />
-                <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
-              </Card>
-            ))}
           </div>
         </div>
       </section>
@@ -164,10 +132,10 @@ const Index = () => {
             Ready to Transform Your Pharmacy?
           </h2>
           <p className="text-lg text-primary-foreground/85 mb-6 max-w-md mx-auto">
-            Join hundreds of pharmacies improving patient care with PharmaCare.
+            Start managing patient follow-ups and medication reminders today.
           </p>
           <Link to="/auth">
-            <Button size="lg" variant="secondary" className="text-base px-6">Start Your Free Trial</Button>
+            <Button size="lg" variant="secondary" className="text-base px-6">Get Started</Button>
           </Link>
         </div>
       </section>
