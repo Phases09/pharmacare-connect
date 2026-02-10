@@ -39,7 +39,7 @@ const Index = () => {
               Smart Pharmacy Management
             </span>
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]">
               Never Miss a{" "}
               <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Patient Follow-Up
@@ -51,10 +51,10 @@ const Index = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Link to="/auth">
-                <Button size="lg" className="text-base px-6">Start Free Trial</Button>
+              <Link to="/auth" className="w-full sm:w-auto">
+                <Button size="lg" className="text-base px-6 w-full sm:w-auto">Start Free Trial</Button>
               </Link>
-              <Button size="lg" variant="outline" className="text-base px-6">Watch Demo</Button>
+              <Button size="lg" variant="outline" className="text-base px-6 w-full sm:w-auto">Watch Demo</Button>
             </div>
 
             <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
@@ -151,50 +151,6 @@ const Index = () => {
                   <p className="text-sm text-muted-foreground">{item.description}</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 lg:px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
-              Simple, <span className="text-primary">Transparent Pricing</span>
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-            {[
-              { name: "Starter", price: "GH₵ 200", features: ["Up to 100 patients", "Basic SMS reminders", "Follow-up tracking", "Basic analytics", "Email support"] },
-              { name: "Professional", price: "GH₵ 400", popular: true, features: ["Up to 500 patients", "SMS + WhatsApp", "Advanced analytics", "Drug database", "Priority support", "Custom branding"] },
-              { name: "Enterprise", price: "GH₵ 800", features: ["Unlimited patients", "All channels", "Full analytics", "API integration", "Dedicated support", "Custom features"] },
-            ].map((plan, i) => (
-              <Card key={i} className={`p-6 relative ${plan.popular ? "border-primary border-2 shadow-lg scale-[1.02]" : ""}`}>
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-primary text-primary-foreground px-3 py-0.5 rounded-full text-xs font-semibold">Most Popular</span>
-                  </div>
-                )}
-                <div className="text-center mb-5">
-                  <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-3xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground text-sm ml-1">/mo</span>
-                  </div>
-                </div>
-                <ul className="space-y-2 mb-6">
-                  {plan.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2Icon className="h-4 w-4 text-success flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/auth">
-                  <Button className="w-full" variant={plan.popular ? "default" : "outline"}>Get Started</Button>
-                </Link>
-              </Card>
             ))}
           </div>
         </div>
