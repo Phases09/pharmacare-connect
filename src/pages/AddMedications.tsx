@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import DashboardLayout from "@/components/DashboardLayout";
 
 interface Patient { id: string; full_name: string; phone: string; }
@@ -96,14 +96,33 @@ const AddMedications = () => {
                 <div className="space-y-3">
                   <div className="relative">
                     <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search patients..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    <Input 
+                      placeholder="Search patients by name or phone..." 
+                      value={searchTerm} 
+                      onChange={(e) => { setSearchTerm(e.target.value); setSelectedPatientId(""); }}
+                      className="pl-10" 
+                    />
                   </div>
-                  <Select value={selectedPatientId} onValueChange={setSelectedPatientId}>
-                    <SelectTrigger><SelectValue placeholder="Select a patient" /></SelectTrigger>
-                    <SelectContent>
-                      {filteredPatients.map(p => (<SelectItem key={p.id} value={p.id}>{p.full_name} — {p.phone}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
+                  {searchTerm && !selectedPatientId && (
+                    <Card className="max-h-48 overflow-y-auto divide-y">
+                      {filteredPatients.length > 0 ? filteredPatients.map(p => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="w-full px-3 py-2.5 text-left hover:bg-accent transition-colors flex items-center gap-3"
+                          onClick={() => { setSelectedPatientId(p.id); setSearchTerm(p.full_name); }}
+                        >
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">{p.full_name.charAt(0)}</div>
+                          <div>
+                            <div className="text-sm font-medium">{p.full_name}</div>
+                            <div className="text-xs text-muted-foreground">{p.phone}</div>
+                          </div>
+                        </button>
+                      )) : (
+                        <div className="px-3 py-4 text-sm text-muted-foreground text-center">No patients found</div>
+                      )}
+                    </Card>
+                  )}
                   {selectedPatient && (
                     <Card className="p-3 bg-primary/5 border-primary/20">
                       <div className="flex items-center gap-3">
