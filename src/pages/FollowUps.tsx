@@ -140,11 +140,12 @@ const FollowUps = () => {
               <div className="space-y-3 pt-3 border-t mt-3">
                 <Select value={outcomes[followUp.id] || ""} onValueChange={(val) => setOutcomes(prev => ({ ...prev, [followUp.id]: val }))}>
                   <SelectTrigger><SelectValue placeholder="Select outcome" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Called - Improving">Called - Improving</SelectItem>
-                    <SelectItem value="Called - Needs Refill">Called - Needs Refill</SelectItem>
-                    <SelectItem value="Not Reached">Not Reached</SelectItem>
-                    <SelectItem value="Wants Consultation">Wants Consultation</SelectItem>
+                   <SelectContent>
+                    <SelectItem value="improving">Called — Improving</SelectItem>
+                    <SelectItem value="needs_refill">Called — Needs Refill</SelectItem>
+                    <SelectItem value="not_reached">Not Reached</SelectItem>
+                    <SelectItem value="needs_consultation">Wants Consultation</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
                 <Textarea
