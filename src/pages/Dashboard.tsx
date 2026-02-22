@@ -12,6 +12,7 @@ import {
   BarChart3Icon,
   DownloadIcon,
   ActivityIcon,
+  MessageCircleIcon,
 } from "lucide-react";
 import { exportPatientsToExcel } from "@/lib/exportToExcel";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ interface Reminder {
   created_at: string;
   patient: {
     full_name: string;
+    phone: string;
   };
 }
 
@@ -122,7 +124,7 @@ const Dashboard = () => {
 
       const { data: remindersData } = await supabase
         .from("reminders")
-        .select(`id, reminder_type, created_at, patient:patients(full_name)`)
+        .select(`id, reminder_type, created_at, patient:patients(full_name, phone)`)
         .in("patient_id", patientIds.length > 0 ? patientIds : [""])
         .order("created_at", { ascending: false })
         .limit(4);
@@ -371,6 +373,20 @@ const Dashboard = () => {
                           {getActivityTime(activity.created_at)}
                         </div>
                       </div>
+                      {activity.patient.phone && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs flex-shrink-0"
+                          onClick={() => {
+                            const phone = activity.patient.phone.replace(/\s+/g, "").replace(/^0/, "233").replace("+", "");
+                            window.open(`https://wa.me/${phone}`, "_blank");
+                          }}
+                        >
+                          <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
+                          WhatsApp
+                        </Button>
+                      )}
                     </div>
                   );
                 })}
