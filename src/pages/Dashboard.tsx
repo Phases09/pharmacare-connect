@@ -326,27 +326,29 @@ const Dashboard = () => {
                       >
                         {getFollowUpDueDate(followUp.scheduled_date)}
                       </Badge>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs"
-                        onClick={() => {
-                          const phone = followUp.patient.phone.replace(/\s+/g, "").replace(/^0/, "233").replace("+", "");
-                          window.open(`https://wa.me/${phone}`, "_blank");
-                        }}
-                      >
-                        <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
-                        WhatsApp
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs"
-                        onClick={() => window.open(`tel:${followUp.patient.phone}`, "_self")}
-                      >
-                        <PhoneIcon className="h-3.5 w-3.5 mr-1" />
-                        Call
-                      </Button>
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            const phone = followUp.patient.phone.replace(/\s+/g, "").replace(/^0/, "233").replace("+", "");
+                            window.open(`https://wa.me/${phone}`, "_blank");
+                          }}
+                        >
+                          <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
+                          WhatsApp
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => window.open(`tel:${followUp.patient.phone}`, "_self")}
+                        >
+                          <PhoneIcon className="h-3.5 w-3.5 mr-1" />
+                          Call
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
