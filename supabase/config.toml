@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.check-adherence]
 verify_jwt = false
+
+[functions.parse-patient-file]
+verify_jwt = false
