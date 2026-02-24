@@ -18,7 +18,7 @@ import { exportPatientsToExcel } from "@/lib/exportToExcel";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import PatientListDialog from "@/components/PatientListDialog";
@@ -61,6 +61,26 @@ const Dashboard = () => {
   const [recentActivity, setRecentActivity] = useState<Reminder[]>([]);
   const [exporting, setExporting] = useState(false);
   const [patientListOpen, setPatientListOpen] = useState(false);
+  const [generatingMsg, setGeneratingMsg] = useState<string | null>(null);
+
+  const openWhatsAppWithAI = useCallback(async (phone: string, patientName: string, medicationName: string, dueDate: string) => {
+    const formattedPhone = phone.replace(/\s+/g, "").replace(/^0/, "233").replace("+", "");
+    setGeneratingMsg(patientName);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-whatsapp-reminder", {
+        body: { patientName, medicationName, dueDate },
+      });
+      if (error) throw error;
+      const message = encodeURIComponent(data.message || "");
+      window.open(`https://wa.me/${formattedPhone}?text=${message}`, "_blank");
+    } catch (e) {
+      console.error("Failed to generate message:", e);
+      toast.error("Could not generate message, opening WhatsApp without it");
+      window.open(`https://wa.me/${formattedPhone}`, "_blank");
+    } finally {
+      setGeneratingMsg(null);
+    }
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -342,13 +362,16 @@ const Dashboard = () => {
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs"
-                          onClick={() => {
-                            const phone = followUp.patient.phone.replace(/\s+/g, "").replace(/^0/, "233").replace("+", "");
-                            window.open(`https://wa.me/${phone}`, "_blank");
-                          }}
+                          disabled={generatingMsg === followUp.patient.full_name}
+                          onClick={() => openWhatsAppWithAI(
+                            followUp.patient.phone,
+                            followUp.patient.full_name,
+                            followUp.patient_medication.medication.name,
+                            getFollowUpDueDate(followUp.scheduled_date)
+                          )}
                         >
                           <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
-                          WhatsApp
+                          {generatingMsg === followUp.patient.full_name ? "Generating..." : "WhatsApp"}
                         </Button>
                         <Button
                           size="sm"
@@ -403,13 +426,16 @@ const Dashboard = () => {
                           size="sm"
                           variant="outline"
                           className="h-7 px-2 text-xs flex-shrink-0"
-                          onClick={() => {
-                            const phone = activity.patient.phone.replace(/\s+/g, "").replace(/^0/, "233").replace("+", "");
-                            window.open(`https://wa.me/${phone}`, "_blank");
-                          }}
+                          disabled={generatingMsg === activity.patient.full_name}
+                          onClick={() => openWhatsAppWithAI(
+                            activity.patient.phone,
+                            activity.patient.full_name,
+                            activity.reminder_type,
+                            "today"
+                          )}
                         >
                           <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
-                          WhatsApp
+                          {generatingMsg === activity.patient.full_name ? "..." : "WhatsApp"}
                         </Button>
                       )}
                     </div>
