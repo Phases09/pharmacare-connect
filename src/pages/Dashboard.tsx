@@ -230,6 +230,15 @@ const Dashboard = () => {
       <Button
         variant="outline"
         size="sm"
+        onClick={() => setPatientListOpen(true)}
+        className="gap-2"
+      >
+        <UsersIcon className="h-4 w-4" />
+        <span className="hidden sm:inline">Patient Records</span>
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         onClick={handleExportPatients}
         disabled={exporting}
         className="hidden sm:inline-flex gap-2"
@@ -260,16 +269,12 @@ const Dashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Total Patients", value: stats.totalPatients, icon: UsersIcon, color: "primary", onClick: () => setPatientListOpen(true) },
+            { label: "Total Patients", value: stats.totalPatients, icon: UsersIcon, color: "primary" },
             { label: "Active Reminders", value: stats.activeReminders, icon: BellIcon, color: "accent" },
             { label: "Follow-Ups Due", value: stats.followUpsDue, icon: CalendarIcon, color: "warning" },
             { label: "Adherence Rate", value: `${stats.adherenceRate}%`, icon: TrendingUpIcon, color: "success" },
           ].map((stat, i) => (
-            <Card
-              key={i}
-              className={`p-5 hover:shadow-md transition-shadow ${stat.onClick ? "cursor-pointer hover:-translate-y-0.5 transition-all" : ""}`}
-              onClick={stat.onClick}
-            >
+            <Card key={i} className="p-5 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-3">
                 <div className={`h-10 w-10 rounded-lg bg-${stat.color}/10 flex items-center justify-center`}>
                   <stat.icon className={`h-5 w-5 text-${stat.color}`} />
