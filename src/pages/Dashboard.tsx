@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
+import PatientListDialog from "@/components/PatientListDialog";
 
 interface FollowUp {
   id: string;
@@ -59,6 +60,7 @@ const Dashboard = () => {
   const [upcomingFollowUps, setUpcomingFollowUps] = useState<FollowUp[]>([]);
   const [recentActivity, setRecentActivity] = useState<Reminder[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [patientListOpen, setPatientListOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -258,12 +260,16 @@ const Dashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "Total Patients", value: stats.totalPatients, icon: UsersIcon, color: "primary" },
+            { label: "Total Patients", value: stats.totalPatients, icon: UsersIcon, color: "primary", onClick: () => setPatientListOpen(true) },
             { label: "Active Reminders", value: stats.activeReminders, icon: BellIcon, color: "accent" },
             { label: "Follow-Ups Due", value: stats.followUpsDue, icon: CalendarIcon, color: "warning" },
             { label: "Adherence Rate", value: `${stats.adherenceRate}%`, icon: TrendingUpIcon, color: "success" },
           ].map((stat, i) => (
-            <Card key={i} className="p-5 hover:shadow-md transition-shadow">
+            <Card
+              key={i}
+              className={`p-5 hover:shadow-md transition-shadow ${stat.onClick ? "cursor-pointer hover:-translate-y-0.5 transition-all" : ""}`}
+              onClick={stat.onClick}
+            >
               <div className="flex items-center justify-between mb-3">
                 <div className={`h-10 w-10 rounded-lg bg-${stat.color}/10 flex items-center justify-center`}>
                   <stat.icon className={`h-5 w-5 text-${stat.color}`} />
@@ -433,6 +439,7 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
+      <PatientListDialog open={patientListOpen} onOpenChange={setPatientListOpen} />
     </DashboardLayout>
   );
 };
