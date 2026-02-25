@@ -245,13 +245,20 @@ const Dashboard = () => {
     );
   }
 
+  const statItems = [
+    { label: "Total Patients", value: stats.totalPatients, icon: UsersIcon, iconBg: "bg-primary/10", iconColor: "text-primary" },
+    { label: "Active Reminders", value: stats.activeReminders, icon: BellIcon, iconBg: "bg-accent/10", iconColor: "text-accent" },
+    { label: "Follow-Ups Due", value: stats.followUpsDue, icon: CalendarIcon, iconBg: "bg-warning/10", iconColor: "text-warning" },
+    { label: "Adherence Rate", value: `${stats.adherenceRate}%`, icon: TrendingUpIcon, iconBg: "bg-success/10", iconColor: "text-success" },
+  ];
+
   const headerActions = (
     <>
       <Button
         variant="outline"
         size="sm"
         onClick={() => setPatientListOpen(true)}
-        className="gap-2"
+        className="gap-2 border-border/60"
       >
         <UsersIcon className="h-4 w-4" />
         <span className="hidden sm:inline">Patient Records</span>
@@ -261,13 +268,13 @@ const Dashboard = () => {
         size="sm"
         onClick={handleExportPatients}
         disabled={exporting}
-        className="hidden sm:inline-flex gap-2"
+        className="hidden sm:inline-flex gap-2 border-border/60"
       >
         <DownloadIcon className="h-4 w-4" />
         {exporting ? "Exporting..." : "Export"}
       </Button>
       <Link to="/register">
-        <Button size="sm" className="gap-2">
+        <Button size="sm" className="gap-2 shadow-sm">
           <PlusIcon className="h-4 w-4" />
           <span className="hidden sm:inline">New Patient</span>
         </Button>
@@ -280,31 +287,23 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 lg:px-6 py-8">
         {/* Welcome */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-1">Welcome back 👋</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight mb-1">Welcome back 👋</h1>
+          <p className="text-sm text-muted-foreground">
             Here's what's happening with your patients today.
           </p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: "Total Patients", value: stats.totalPatients, icon: UsersIcon, color: "primary" },
-            { label: "Active Reminders", value: stats.activeReminders, icon: BellIcon, color: "accent" },
-            { label: "Follow-Ups Due", value: stats.followUpsDue, icon: CalendarIcon, color: "warning" },
-            { label: "Adherence Rate", value: `${stats.adherenceRate}%`, icon: TrendingUpIcon, color: "success" },
-          ].map((stat, i) => (
-            <Card key={i} className="p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`h-10 w-10 rounded-lg bg-${stat.color}/10 flex items-center justify-center`}>
-                  <stat.icon className={`h-5 w-5 text-${stat.color}`} />
+          {statItems.map((stat, i) => (
+            <Card key={i} className="p-5 border-border/60 hover:shadow-md transition-all duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`h-10 w-10 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
+                  <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
                 </div>
-                <Badge variant="secondary" className="text-[10px] font-medium uppercase tracking-wider">
-                  {stat.label.split(" ")[0]}
-                </Badge>
               </div>
               <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+              <div className="text-xs text-muted-foreground mt-1 font-medium">{stat.label}</div>
             </Card>
           ))}
         </div>
@@ -312,153 +311,163 @@ const Dashboard = () => {
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Follow-Ups */}
-          <Card className="lg:col-span-2 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-primary" />
+          <Card className="lg:col-span-2 border-border/60">
+            <div className="flex items-center justify-between p-6 pb-0">
+              <h2 className="text-base font-semibold flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <CalendarIcon className="h-4 w-4 text-primary" />
+                </div>
                 Upcoming Follow-Ups
               </h2>
               <Link to="/follow-ups">
-                <Button variant="ghost" size="sm" className="text-xs">View All</Button>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">View All</Button>
               </Link>
             </div>
 
-            {upcomingFollowUps.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground text-sm">
-                No upcoming follow-ups scheduled
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {upcomingFollowUps.map((followUp) => (
-                  <div
-                    key={followUp.id}
-                    className="flex items-center justify-between p-3.5 rounded-lg border border-border hover:bg-muted/40 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
-                        {followUp.patient.full_name.charAt(0)}
+            <div className="p-6 pt-4">
+              {upcomingFollowUps.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  No upcoming follow-ups scheduled
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {upcomingFollowUps.map((followUp) => (
+                    <div
+                      key={followUp.id}
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-border/50 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center text-sm font-semibold text-primary">
+                          {followUp.patient.full_name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{followUp.patient.full_name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {followUp.patient_medication.medication.name}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-medium text-sm">{followUp.patient.full_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {followUp.patient_medication.medication.name}
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            getFollowUpDueDate(followUp.scheduled_date) === "Today" ||
+                            getFollowUpDueDate(followUp.scheduled_date) === "Overdue"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                          className="text-[10px] font-medium"
+                        >
+                          {getFollowUpDueDate(followUp.scheduled_date)}
+                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-border/50"
+                            disabled={generatingMsg === followUp.patient.full_name}
+                            onClick={() => openWhatsAppWithAI(
+                              followUp.patient.phone,
+                              followUp.patient.full_name,
+                              followUp.patient_medication.medication.name,
+                              getFollowUpDueDate(followUp.scheduled_date)
+                            )}
+                          >
+                            <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
+                            {generatingMsg === followUp.patient.full_name ? "Generating..." : "WhatsApp"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-border/50"
+                            onClick={() => window.open(`tel:${followUp.patient.phone}`, "_self")}
+                          >
+                            <PhoneIcon className="h-3.5 w-3.5 mr-1" />
+                            Call
+                          </Button>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          getFollowUpDueDate(followUp.scheduled_date) === "Today" ||
-                          getFollowUpDueDate(followUp.scheduled_date) === "Overdue"
-                            ? "destructive"
-                            : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {getFollowUpDueDate(followUp.scheduled_date)}
-                      </Badge>
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          disabled={generatingMsg === followUp.patient.full_name}
-                          onClick={() => openWhatsAppWithAI(
-                            followUp.patient.phone,
-                            followUp.patient.full_name,
-                            followUp.patient_medication.medication.name,
-                            getFollowUpDueDate(followUp.scheduled_date)
-                          )}
-                        >
-                          <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
-                          {generatingMsg === followUp.patient.full_name ? "Generating..." : "WhatsApp"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => window.open(`tel:${followUp.patient.phone}`, "_self")}
-                        >
-                          <PhoneIcon className="h-3.5 w-3.5 mr-1" />
-                          Call
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </Card>
 
           {/* Recent Activity */}
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2 mb-5">
-              <ActivityIcon className="h-5 w-5 text-primary" />
-              Recent Activity
-            </h2>
+          <Card className="border-border/60">
+            <div className="p-6 pb-0">
+              <h2 className="text-base font-semibold flex items-center gap-2">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <ActivityIcon className="h-4 w-4 text-primary" />
+                </div>
+                Recent Activity
+              </h2>
+            </div>
 
-            {recentActivity.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground text-sm">
-                No recent activity
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentActivity.map((activity) => {
-                  const Icon = getActivityIcon(activity.reminder_type);
-                  return (
-                    <div key={activity.id} className="flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            <div className="p-6 pt-4">
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  No recent activity
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => {
+                    const Icon = getActivityIcon(activity.reminder_type);
+                    return (
+                      <div key={activity.id} className="flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-muted/80 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium leading-tight">
+                            {getActivityLabel(activity.reminder_type)}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {activity.patient.full_name}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground/60 mt-0.5">
+                            {getActivityTime(activity.created_at)}
+                          </div>
+                        </div>
+                        {activity.patient.phone && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs flex-shrink-0 border-border/50"
+                            disabled={generatingMsg === activity.patient.full_name}
+                            onClick={() => openWhatsAppWithAI(
+                              activity.patient.phone,
+                              activity.patient.full_name,
+                              activity.reminder_type,
+                              "today"
+                            )}
+                          >
+                            <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
+                            {generatingMsg === activity.patient.full_name ? "..." : "WhatsApp"}
+                          </Button>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium leading-tight">
-                          {getActivityLabel(activity.reminder_type)}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {activity.patient.full_name}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground/70 mt-0.5">
-                          {getActivityTime(activity.created_at)}
-                        </div>
-                      </div>
-                      {activity.patient.phone && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs flex-shrink-0"
-                          disabled={generatingMsg === activity.patient.full_name}
-                          onClick={() => openWhatsAppWithAI(
-                            activity.patient.phone,
-                            activity.patient.full_name,
-                            activity.reminder_type,
-                            "today"
-                          )}
-                        >
-                          <MessageCircleIcon className="h-3.5 w-3.5 mr-1" />
-                          {generatingMsg === activity.patient.full_name ? "..." : "WhatsApp"}
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </Card>
         </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
           {[
-            { label: "New Patient", desc: "Register & prescribe", path: "/register", icon: PlusIcon, color: "primary" },
-            { label: "Add Medications", desc: "Existing patients", path: "/add-medications", icon: PillIcon, color: "warning" },
-            { label: "Follow-Ups", desc: "View scheduled", path: "/follow-ups", icon: CalendarIcon, color: "accent" },
-            { label: "Analytics", desc: "Performance metrics", path: "/analytics", icon: BarChart3Icon, color: "success" },
+            { label: "New Patient", desc: "Register & prescribe", path: "/register", icon: PlusIcon, iconBg: "bg-primary/10", iconColor: "text-primary" },
+            { label: "Add Medications", desc: "Existing patients", path: "/add-medications", icon: PillIcon, iconBg: "bg-warning/10", iconColor: "text-warning" },
+            { label: "Follow-Ups", desc: "View scheduled", path: "/follow-ups", icon: CalendarIcon, iconBg: "bg-accent/10", iconColor: "text-accent" },
+            { label: "Analytics", desc: "Performance metrics", path: "/analytics", icon: BarChart3Icon, iconBg: "bg-success/10", iconColor: "text-success" },
           ].map((action, i) => (
             <Link key={i} to={action.path}>
-              <Card className="p-4 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group h-full">
+              <Card className="p-4 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group h-full border-border/60">
                 <div className="flex items-center gap-3">
-                  <div className={`h-10 w-10 rounded-lg bg-${action.color}/10 flex items-center justify-center group-hover:scale-105 transition-transform`}>
-                    <action.icon className={`h-5 w-5 text-${action.color}`} />
+                  <div className={`h-10 w-10 rounded-xl ${action.iconBg} flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                    <action.icon className={`h-5 w-5 ${action.iconColor}`} />
                   </div>
                   <div>
                     <div className="font-semibold text-sm">{action.label}</div>
