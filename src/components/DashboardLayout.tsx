@@ -42,12 +42,12 @@ const DashboardLayout = ({ children, actions }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-border/60 bg-card/60 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center gap-2.5 shrink-0">
-              <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+              <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
                 <PillIcon className="h-5 w-5 text-primary-foreground" />
               </div>
               <span className="text-xl font-bold tracking-tight text-foreground">
@@ -56,7 +56,7 @@ const DashboardLayout = ({ children, actions }: DashboardLayoutProps) => {
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-1 mx-8">
+            <nav className="hidden lg:flex items-center gap-0.5 mx-8">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
@@ -65,10 +65,10 @@ const DashboardLayout = ({ children, actions }: DashboardLayoutProps) => {
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "gap-2 font-medium transition-all",
+                        "gap-2 font-medium transition-all rounded-lg h-9",
                         isActive
                           ? "bg-primary/10 text-primary hover:bg-primary/15"
-                          : "text-muted-foreground hover:text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                       )}
                     >
                       <item.icon className="h-4 w-4" />
@@ -86,7 +86,7 @@ const DashboardLayout = ({ children, actions }: DashboardLayoutProps) => {
                 variant="ghost"
                 size="sm"
                 onClick={handleSignOut}
-                className="text-muted-foreground hover:text-foreground gap-2"
+                className="text-muted-foreground hover:text-foreground gap-2 hover:bg-muted/60"
               >
                 <LogOutIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -111,8 +111,8 @@ const DashboardLayout = ({ children, actions }: DashboardLayoutProps) => {
 
         {/* Mobile Nav */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-border bg-card/95 backdrop-blur-md">
-            <nav className="container mx-auto px-4 py-3 flex flex-col gap-1">
+          <div className="lg:hidden border-t border-border/60 bg-card/95 backdrop-blur-xl">
+            <nav className="container mx-auto px-4 py-3 flex flex-col gap-0.5">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
@@ -124,7 +124,7 @@ const DashboardLayout = ({ children, actions }: DashboardLayoutProps) => {
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start gap-3 font-medium",
+                        "w-full justify-start gap-3 font-medium rounded-lg",
                         isActive
                           ? "bg-primary/10 text-primary"
                           : "text-muted-foreground"
