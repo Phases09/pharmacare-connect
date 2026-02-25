@@ -55,17 +55,6 @@ Deno.serve(async (req) => {
           delivery_channel: 'sms',
           status: 'pending'
         })
-
-        // Also create WhatsApp reminder
-        reminders.push({
-          patient_id: patient.id,
-          patient_medication_id: patientMedicationId,
-          reminder_type: 'dose',
-          message: `Time to take your ${medication.name}. Dosage: ${patientMed.custom_dosage || medication.standard_dosage}`,
-          scheduled_at: scheduledAt.toISOString(),
-          delivery_channel: 'whatsapp',
-          status: 'pending'
-        })
       }
     }
 
